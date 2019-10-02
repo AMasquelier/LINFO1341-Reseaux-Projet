@@ -20,7 +20,7 @@ int main()
 	for (int i = 0; i < 32; i++) cout << bits[i]; cout << endl;
 
 
-	
+
 	type = bits[0] * 2 + bits[1];
 	cout << "type = " << type << endl;
 
