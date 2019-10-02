@@ -1,10 +1,11 @@
 #include <stdlib.h> /* EXIT_X */
 #include <stdio.h> /* fprintf */
 #include <unistd.h> /* getopt */
-#include <sys/socket.h>
+#include <netdb.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 
-typename struct TRTP_packet
+/*typedef struct TRTP_packet
 {
     int type = 0;
 	bool tr = false;
@@ -32,12 +33,47 @@ TRTP_packet read_TRTP_packet(uint32_t header)
 	packet.L = bits[8];
     // Length
 	for (int i = 0; i < 7 + 8 * L; i++) packet.Length = 2 * packet.Length + bits[9 + i];
-    
+
 	if (packet.type != 1 && packet.tr) printf("Ignored"\n);
 
-	if (packet.type == 1 && packet.Length == 0 /* && ... */) printf("Transfer ended"\n);
+	if (packet.type == 1 && packet.Length == 0 /* && ... ) printf("Transfer ended"\n);
 
     return packet;
+}*/
+
+const char *real_address(const char *address, struct sockaddr_in6 *addr)
+{
+    char * ret =  (char *) malloc(64);
+    struct addrinfo* result;
+    struct addrinfo* res;
+    int error;
+
+    /* resolve the domain name into a list of addresses */
+    error = getaddrinfo(address, NULL, NULL, &result);
+    if (error != 0) {
+        if (error == EAI_SYSTEM) {
+            perror("getaddrinfo");
+        } else {
+            fprintf(stderr, "error in getaddrinfo: %s\n", gai_strerror(error));
+        }
+        exit(EXIT_FAILURE);
+    }
+
+    /* loop over all returned results and do inverse lookup */
+    for (res = result; res != NULL; res = res->ai_next) {
+        char hostname[NI_MAXHOST];
+        error = getnameinfo(res->ai_addr, res->ai_addrlen, hostname, NI_MAXHOST, NULL, 0, 0);
+        if (error != 0) {
+            fprintf(stderr, "error in getnameinfo: %s\n", gai_strerror(error));
+            continue;
+        }
+        if (*hostname != '\0')
+            printf("hostname: %s\n", hostname);
+        strcpy(ret, hostname);
+    }
+
+    freeaddrinfo(result);
+    return ret;
 }
 
 int create_socket(struct sockaddr_in6 *dest_addr, int dst_port)
@@ -51,9 +87,10 @@ int create_socket(struct sockaddr_in6 *dest_addr, int dst_port)
 
     if (sock == 0) fprintf(stderr, "SOCKET CREATION ERROR\n");
 
-    if (connect(sock, (struct sockaddr*)dest_addr, sizeof(dest_addr)) < 0)
+    int err;
+    if ((err = connect(sock, (struct sockaddr*)dest_addr, sizeof(dest_addr))) < 0)
     {
-        fprintf(stderr, "CONNECTING ERROR\n");
+        fprintf(stderr, "CONNECTING ERROR : %d\n", err);
         return -1;
     }
     dest_addr->sin6_family = AF_INET6;
@@ -65,16 +102,13 @@ int create_socket(struct sockaddr_in6 *dest_addr, int dst_port)
 int main(int argc, char *argv[])
 {
     int client = 0;
-	int port = 12345;
+	int port = 1341;
 	int opt;
 	char *host = "::1";
 
     struct sockaddr_in6 addr;
-	const char *err = real_address(host, &addr);
-	if (err) {
-		fprintf(stderr, "Could not resolve hostname %s: %s\n", host, err);
-		return EXIT_FAILURE;
-	}
+
+    char *address = real_address(host, &addr);
 
     create_socket(&addr, port);
 
