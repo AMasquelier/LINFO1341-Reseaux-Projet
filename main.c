@@ -71,11 +71,24 @@ int main(int argc, char *argv[])
 	int opt;
 	char *host = "::1";
 
+    uint32_t test = 0xd18132f4;
+    void * p = malloc(64);
+    memcpy(p, &test, 32);
+    memcpy(p+32, &test, 32);
+
+    TRTP_packet pkt = read_TRTP_packet(p);
+
+
+    printf("%d\n", pkt.length);
+    printf("%d\n", pkt.L);
+    printf("%zu\n", test);
+    printf("%zu\n", pkt.timestamp);
+
     struct sockaddr_in6 addr;
 
-    char *address = real_address(host, &addr);
+    //char *address = real_address(host, &addr);
 
-    create_socket(&addr, port);
+    //create_socket(&addr, port);
 
     return 0;
 }
