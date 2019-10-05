@@ -31,9 +31,20 @@ int main(int argc, char *argv[])
     printf("%zu\n", pkt.timestamp);*/
 
     struct sockaddr_in6 serv_addr, client_addr;
-    int err = bind(s, (struct sockaddr *)&addr, sizeof(addr));
-    printf("%d\n", err);
+    socklen_t clientsize = sizeof(client_addr);
+    bzero(&client_addr, sizeof(client_addr));
 
+    int sock = create_socket(&serv_addr, port);
+
+    char msg[8192];
+
+
+    int n = recvfrom(sock, (char*) msg, sizeof(msg), 0, (struct sockaddr *) &client_addr, &clientsize);
+    printf("%d\n", n);
+    printf("%s\n", msg);
+
+    strncpy(msg, "Gneeeeh", sizeof(msg));
+    sendto(sock, msg, sizeof(msg), 0, (struct sockaddr*) &client_addr, clientsize);
 
     return 0;
 }
