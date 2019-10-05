@@ -14,8 +14,13 @@ typedef struct TRTP_packet
                 L : 1,
                 length : 15,
                 seqnum : 8;
-    uint32_t timestamp, CRC1, CRC2;
+    uint32_t timestamp, CRC1;
     void *payload;
+    uint32_t CRC2;
 } TRTP_packet;
+
+void crc32(const void *data, size_t n_bytes, uint32_t* crc);
+
+TRTP_packet make_ack(uint8_t seqnum, uint32_t timestamp);
 
 TRTP_packet read_TRTP_packet(void *packet);
