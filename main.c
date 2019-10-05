@@ -1,77 +1,23 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <netinet/in.h>
+#include <string.h>
+#include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
+
+#include "network.h"
 #include "packet.h"
 
 
-const char *real_address(const char *address, struct sockaddr_in6 *addr)
-{
-    char * ret =  (char *) malloc(64);
-    struct addrinfo* result;
-    struct addrinfo* res;
-    int error;
-
-
-    error = getaddrinfo(address, NULL, NULL, &result);
-    if (error != 0) {
-        if (error == EAI_SYSTEM) {
-            perror("getaddrinfo");
-        } else {
-            fprintf(stderr, "error in getaddrinfo: %s\n", gai_strerror(error));
-        }
-        exit(EXIT_FAILURE);
-    }
-
-    for (res = result; res != NULL; res = res->ai_next) {
-        char hostname[NI_MAXHOST];
-        error = getnameinfo(res->ai_addr, res->ai_addrlen, hostname, NI_MAXHOST, NULL, 0, 0);
-        if (error != 0) {
-            fprintf(stderr, "error in getnameinfo: %s\n", gai_strerror(error));
-            continue;
-        }
-        if (*hostname != '\0')
-            printf("hostname: %s\n", hostname);
-        strcpy(ret, hostname);
-    }
-
-    freeaddrinfo(result);
-    return ret;
-}
-
-int create_socket(struct sockaddr_in6 *dest_addr, int dst_port)
-{
-    if (dest_addr == NULL || dst_port <= 0)
-    {
-        fprintf(stderr, "Bad input\n");
-        return -1;
-    }
-    int sock = socket(AF_INET6, SOCK_DGRAM, 0); // IPv6, UDP
-
-    if (sock == 0) fprintf(stderr, "SOCKET CREATION ERROR\n");
-
-    int err;
-    if ((err = connect(sock, (struct sockaddr*)dest_addr, sizeof(dest_addr))) < 0)
-    {
-        fprintf(stderr, "CONNECTING ERROR : %d\n", err);
-        return -1;
-    }
-    dest_addr->sin6_family = AF_INET6;
-    dest_addr->sin6_addr = in6addr_any;
-    dest_addr->sin6_port = htons(dst_port);
-
-}
 
 int main(int argc, char *argv[])
 {
     int client = 0;
-	int port = 12345;
+	int port = 1341;
 	int opt;
 	char *host = "::1";
 
-    uint32_t test = 0xd18132f4;
+    /*uint32_t test = 0xd18132f4;
     void * p = malloc(64);
     memcpy(p, &test, 32);
     memcpy(p+32, &test, 32);
@@ -82,13 +28,12 @@ int main(int argc, char *argv[])
     printf("%d\n", pkt.length);
     printf("%d\n", pkt.L);
     printf("%zu\n", test);
-    printf("%zu\n", pkt.timestamp);
+    printf("%zu\n", pkt.timestamp);*/
 
-    struct sockaddr_in6 addr;
+    struct sockaddr_in6 serv_addr, client_addr;
+    int err = bind(s, (struct sockaddr *)&addr, sizeof(addr));
+    printf("%d\n", err);
 
-    //char *address = real_address(host, &addr);
-
-    //create_socket(&addr, port);
 
     return 0;
 }

@@ -29,10 +29,10 @@ TRTP_packet read_TRTP_packet(void *packet)
     // Timestamp
     memcpy(&pkt.timestamp, packet + 3 + pkt.L, 4);
     // CRC1
-    memcpy(&pkt.CRC1, packet + 7 + pkt.L 4);
+    memcpy(&pkt.CRC1, packet + 7 + pkt.L, 4);
     memcpy(&pkt.CRC2, packet + 11 + pkt.L + pkt.length, 4);
     // payload
-    payload = malloc(pkt.length);
+    pkt.payload = malloc(pkt.length);
     memcpy(&pkt.payload, packet + 11 + pkt.L, pkt.length);
 
     return pkt;
