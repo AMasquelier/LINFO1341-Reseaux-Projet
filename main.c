@@ -9,7 +9,6 @@
 #include "packet.h"
 
 
-
 int main(int argc, char *argv[])
 {
     int client = 0;
@@ -30,16 +29,16 @@ int main(int argc, char *argv[])
     printf("%zu\n", test);
     printf("%zu\n", pkt.timestamp);*/
 
-    TRTP_packet x;
-    bzero(&x, sizeof(x));
-    x.type = 2;
-    x.tr = 1;
-    x.window = 1;
-    x.L = 1;
-    x.length = 1;
-    x.CRC2 = 2;
-    printf("%ld\n", sizeof(x.payload));
-    display_byte_representation(&x, sizeof(x));
+    void *pck = make_ack(0, 4);
+
+    display_byte_representation(pck, 15);
+
+    TRTP_packet p = read_TRTP_packet(pck);
+    printf("type : %d\n", p.type);
+    printf("tr : %d\n", p.tr);
+    printf("window : %d\n", p.window);
+    printf("seqnum : %d\n", p.seqnum);
+    printf("timestamp : %d\n", p.timestamp);
 
     /*struct sockaddr_in6 serv_addr, client_addr;
     socklen_t clientsize = sizeof(client_addr);

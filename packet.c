@@ -40,20 +40,54 @@ void display_byte_representation(void *data, long size)
     printf("\n");
 }
 
+
+typedef struct ttw
+{
+    uint8_t window : 5, tr : 1, type : 2;
+}ttw;
+
+typedef struct ls8
+{
+    uint8_t length : 7, L : 1;
+}ls8;
+
+typedef struct ls16
+{
+    uint16_t length : 15, L : 1;
+}ls16;
+
+
 void *make_ack(uint8_t seqnum, uint32_t timestamp)
 {
     void *ret = malloc(15);
-    TRTP_packet pck;
-    pck.type    = 2;
-    pck.tr      = 0;
-    pck.window  = 0;
-    pck.L       = 0;
-    pck.length  = 0;
-    pck.seqnum  = (seqnum + 1) % 256;
-    pck.timestamp = timestamp;
-    crc32(&pck, sizeof(pck), &pck.CRC1);
-    pck.payload = NULL;
-    crc32(&pck, sizeof(pck), &pck.CRC2);
+    bzero(ret, 15);
+
+    ttw _ttw;
+    _ttw.type    = 2;
+    _ttw.tr      = 0;
+    _ttw.window  = 0;
+    memcpy(ret, &_ttw, 1);
+
+    ls8 _ls;
+    _ls.L        = 0;
+    _ls.length   = 0;
+    memcpy(ret + 1, &_ls, 1);
+
+    uint8_t sn  = (seqnum + 1) % 256;
+    memcpy(ret + 2, &sn, 1);
+
+    timestamp = htonl(timestamp);
+    memcpy(ret + 3, &timestamp, 4);
+
+    uint32_t CRC1, CRC2;
+    crc32(ret, 15, &CRC1);
+    CRC1 = htonl(CRC1);
+    memcpy(ret + 7, &CRC1, 4);
+    crc32(ret, 15, &CRC2);
+    CRC2 = htonl(CRC2);
+    memcpy(ret + 11, &CRC2, 4);
+
+    return ret;
 }
 
 TRTP_packet read_TRTP_packet(void *packet)
@@ -62,10 +96,11 @@ TRTP_packet read_TRTP_packet(void *packet)
     uint32_t header;
 
     memcpy(&header, packet, 32);
-
-
+    //display_byte_representation(&header, 4);
+    header = htonl(header);
     uint8_t bits[32];
 	for (int i = 31; i >= 0; i--) bits[31-i] = ((header >> i) & 1);
+    for (int i = 0; i < 32; i++) printf("%d", bits[i]); printf("\n");
 
     // Type
 	pkt.type = bits[0] * 2 + bits[1];
@@ -78,15 +113,21 @@ TRTP_packet read_TRTP_packet(void *packet)
     // Length
 	for (int i = 0; i < 7 + 8 * pkt.L; i++) pkt.length = 2 * pkt.length + bits[9 + i];
 
+    memcpy(&pkt.seqnum, packet + 2 + pkt.L, 1);
+    if (pkt.L) pkt.seqnum = ntohs(pkt.seqnum);
+
 	if ((pkt.type != 1 && pkt.tr) || pkt.length > 512) printf("Ignored\n");
 
 	if (pkt.type == 1 && pkt.length == 0 /* && ... */) printf("Transfer ended\n");
 
     // Timestamp
     memcpy(&pkt.timestamp, packet + 3 + pkt.L, 4);
+    pkt.timestamp = htonl(pkt.timestamp);
     // CRC1
     memcpy(&pkt.CRC1, packet + 7 + pkt.L, 4);
+    pkt.CRC1 = htonl(pkt.CRC1);
     memcpy(&pkt.CRC2, packet + 11 + pkt.L + pkt.length, 4);
+    pkt.CRC2 = htonl(pkt.CRC2);
     // payload
     pkt.payload = malloc(pkt.length);
     memcpy(&pkt.payload, packet + 11 + pkt.L, pkt.length);
