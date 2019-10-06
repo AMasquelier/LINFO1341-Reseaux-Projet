@@ -16,6 +16,30 @@ void crc32(const void *data, size_t n_bytes, uint32_t* crc) {
     *crc = table[(uint8_t)*crc ^ ((uint8_t*)data)[i]] ^ *crc >> 8;
 }
 
+void display_byte(uint8_t byte)
+{
+    uint8_t bits[8];
+    for (int j = 0; j < 8;  j++) printf("%d", ((byte >> (7-j)) & 1));
+    printf(" ");
+}
+
+void display_byte_representation(void *data, long size)
+{
+    uint8_t byte;
+    for (long i = 0; i < size; i++)
+    {
+        memcpy(&byte, data + i, 1);
+        display_byte(byte);
+    }
+    printf("\n");
+    for (long i = 0; i < size; i++)
+    {
+        memcpy(&byte, data + i, 1);
+        printf("%02X ", byte);
+    }
+    printf("\n");
+}
+
 void *make_ack(uint8_t seqnum, uint32_t timestamp)
 {
     void *ret = malloc(15);

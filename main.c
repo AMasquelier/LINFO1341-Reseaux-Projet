@@ -30,7 +30,18 @@ int main(int argc, char *argv[])
     printf("%zu\n", test);
     printf("%zu\n", pkt.timestamp);*/
 
-    struct sockaddr_in6 serv_addr, client_addr;
+    TRTP_packet x;
+    bzero(&x, sizeof(x));
+    x.type = 2;
+    x.tr = 1;
+    x.window = 1;
+    x.L = 1;
+    x.length = 1;
+    x.CRC2 = 2;
+    printf("%ld\n", sizeof(x.payload));
+    display_byte_representation(&x, sizeof(x));
+
+    /*struct sockaddr_in6 serv_addr, client_addr;
     socklen_t clientsize = sizeof(client_addr);
     bzero(&client_addr, sizeof(client_addr));
 
@@ -44,7 +55,7 @@ int main(int argc, char *argv[])
     printf("%s\n", msg);
 
     strncpy(msg, "Gneeeeh", sizeof(msg));
-    sendto(sock, msg, sizeof(msg), 0, (struct sockaddr*) &client_addr, clientsize);
+    sendto(sock, msg, sizeof(msg), 0, (struct sockaddr*) &client_addr, clientsize);*/
 
     return 0;
 }

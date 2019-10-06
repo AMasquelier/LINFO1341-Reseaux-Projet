@@ -21,6 +21,8 @@ typedef struct TRTP_packet
 
 void crc32(const void *data, size_t n_bytes, uint32_t* crc);
 
-TRTP_packet make_ack(uint8_t seqnum, uint32_t timestamp);
+void display_byte_representation(void *data, long size);
+
+void * make_ack(uint8_t seqnum, uint32_t timestamp);
 
 TRTP_packet read_TRTP_packet(void *packet);
