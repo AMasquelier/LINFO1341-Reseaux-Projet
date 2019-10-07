@@ -26,4 +26,6 @@ void display_byte_representation(void *data, long size);
 
 void * make_ack(uint8_t seqnum, uint32_t timestamp);
 
+void * make_nack(uint8_t seqnum);
+
 TRTP_packet read_TRTP_packet(void *packet);

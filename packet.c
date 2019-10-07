@@ -90,6 +90,39 @@ void *make_ack(uint8_t seqnum, uint32_t timestamp)
     return ret;
 }
 
+void *make_nack(uint8_t seqnum)
+{
+    void *ret = malloc(15);
+    bzero(ret, 15);
+
+    ttw _ttw;
+    _ttw.type    = 3;
+    _ttw.tr      = 0;
+    _ttw.window  = 0;
+    memcpy(ret, &_ttw, 1);
+
+    ls8 _ls;
+    _ls.L        = 0;
+    _ls.length   = 0;
+    memcpy(ret + 1, &_ls, 1);
+
+    uint8_t sn  = seqnum;
+    memcpy(ret + 2, &sn, 1);
+
+    timestamp = 0;
+    memcpy(ret + 3, &timestamp, 4);
+
+    uint32_t CRC1, CRC2;
+    crc32(ret, 15, &CRC1);
+    CRC1 = htonl(CRC1);
+    memcpy(ret + 7, &CRC1, 4);
+    crc32(ret, 15, &CRC2);
+    CRC2 = htonl(CRC2);
+    memcpy(ret + 11, &CRC2, 4);
+
+    return ret;
+}
+
 TRTP_packet read_TRTP_packet(void *packet)
 {
     TRTP_packet pkt;

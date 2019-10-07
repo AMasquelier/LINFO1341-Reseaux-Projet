@@ -29,6 +29,8 @@ int main(int argc, char *argv[])
     printf("%zu\n", test);
     printf("%zu\n", pkt.timestamp);*/
 
+
+    // Test format ACK
     void *pck = make_ack(0, 4);
 
     display_byte_representation(pck, 15);
