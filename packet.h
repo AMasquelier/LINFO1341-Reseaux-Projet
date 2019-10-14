@@ -28,9 +28,9 @@ uint32_t crc32(uint32_t crc, char *buf, size_t len);
 
 void display_byte_representation(void *data, long size);
 
-void *make_ack(uint8_t seqnum, uint32_t timestamp);
+void *make_ack(uint8_t seqnum, uint32_t timestamp, uint8_t window);
 
-void *make_nack(uint8_t seqnum, uint32_t timestamp);
+void *make_nack(uint8_t seqnum, uint32_t timestamp, uint8_t window);
 
 TRTP_packet *read_TRTP_packet(void *packet);
 

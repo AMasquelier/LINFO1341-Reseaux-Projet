@@ -14,25 +14,27 @@
 
 #define WINDOW_SIZE 4
 
+typedef struct Client
+{
+    struct in6_addr addr;
+
+    int file;
+    uint8_t seqnum;
+    uint8_t closed;
+} Client;
+
 typedef struct linked_buffer
 {
     TRTP_packet *pkt;
     struct linked_buffer *next;
+    Client *client;
 } linked_buffer;
 
-typedef struct Client
-{
-    struct in6_addr addr;
-    linked_buffer *first;
-    uint8_t buf_size;
-
-    int file;
-    uint8_t seqnum;
-} Client;
-
-int add_packet(Client *client, TRTP_packet *pkt);
+linked_buffer* add_packet(linked_buffer *first, Client *client, TRTP_packet *pkt);
 
 int create_client(Client *c, struct sockaddr_in6 *serv_addr);
+
+linked_buffer* process_packet(linked_buffer *first);
 
 int send_ack(int socket, struct sockaddr_in6 *client, uint8_t seqnum, uint32_t timestamp, uint8_t window);
 

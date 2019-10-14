@@ -90,7 +90,7 @@ typedef struct ls16
 }ls16;
 
 
-void *make_ack(uint8_t seqnum, uint32_t timestamp)
+void *make_ack(uint8_t seqnum, uint32_t timestamp, uint8_t window)
 {
     void *ret = malloc(11);
     bzero(ret, 11);
@@ -98,7 +98,7 @@ void *make_ack(uint8_t seqnum, uint32_t timestamp)
     ttw _ttw;
     _ttw.type    = 2;
     _ttw.tr      = 0;
-    _ttw.window  = 1;
+    _ttw.window  = window;
     memcpy(ret, &_ttw, 1);
 
     ls8 _ls;
@@ -120,7 +120,7 @@ void *make_ack(uint8_t seqnum, uint32_t timestamp)
     return ret;
 }
 
-void *make_nack(uint8_t seqnum, uint32_t timestamp)
+void *make_nack(uint8_t seqnum, uint32_t timestamp, uint8_t window)
 {
     void *ret = malloc(11);
     bzero(ret, 11);
@@ -128,7 +128,7 @@ void *make_nack(uint8_t seqnum, uint32_t timestamp)
     ttw _ttw;
     _ttw.type    = 3;
     _ttw.tr      = 0;
-    _ttw.window  = 0;
+    _ttw.window  = window;
     memcpy(ret, &_ttw, 1);
 
     ls8 _ls;
@@ -213,7 +213,7 @@ TRTP_packet *read_TRTP_packet(void *packet)
 	CRC2 = crc32(0, packet + 11 + pkt->L, pkt->length);
 
     // Payload
-    pkt->payload = malloc(pkt->length);
+    if(pkt->length > 0) pkt->payload = malloc(pkt->length);
     memcpy(pkt->payload, packet + 11 + pkt->L, pkt->length);
 
 

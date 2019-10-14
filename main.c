@@ -63,13 +63,13 @@ int main(int argc, char *argv[])
 	}
 
 
-
+	fd_set rset;
     struct sockaddr_in6 serv_addr, client_addr;
-    socklen_t clientsize = sizeof(client_addr);
-    socklen_t servsize = sizeof(serv_addr);
     bzero(&client_addr, sizeof(client_addr));
 
     int sock = create_socket(&serv_addr, port);
+
+	FD_ZERO(&rset);
 
     void *buf = malloc(528);
 
@@ -78,6 +78,7 @@ int main(int argc, char *argv[])
 
     int n = 0;
 	int window = WINDOW_SIZE;
+	linked_buffer *buffer = NULL;
 
 
     int keep = 1;
@@ -85,20 +86,80 @@ int main(int argc, char *argv[])
     Client client;
 	create_client(&client, NULL);
 
+	struct timeval timeout;
+	timeout.tv_sec = 4;
+	timeout.tv_usec = 150000;
+
     while (keep)
     {
         int n_rec = 0;
-		n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
+
+		FD_SET(sock, &rset);
+		int nready = select(sock+1, &rset, NULL, NULL, &timeout);
+
+		if (window > 0 && FD_ISSET(sock, &rset))
+		{
+			socklen_t clientsize = sizeof(client_addr);
+			n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
+
+			TRTP_packet *p = read_TRTP_packet(buf);
+	        printf("type : %d\n", p->type);
+	        printf("tr : %d\n", p->tr);
+	        printf("window : %d\n", p->window);
+	        printf("seqnum : %d\n", p->seqnum);
+	        printf("L : %d\n", p->L);
+	        printf("length : %d\n", p->length);
+			printf("timestamp : %d\n", p->timestamp);
+
+			uint32_t CRC2 = crc32(0, p->payload, p->length);
+
+	        if ((p->CRC1 != p->nCRC1) || (p->type == 1 && p->length != 0 && CRC2 != p->CRC2))
+	        {
+	            send_nack(sock, &client_addr, p->seqnum, p->timestamp, window);
+	        }
+	        else
+	        {
+	            send_ack(sock, &client_addr, p->seqnum, p->timestamp, window);
+				if (p->length > 0)
+				{
+					linked_buffer *_buf = add_packet(buffer, &client, p);
+					if (_buf != NULL)
+					{
+						buffer = _buf;
+						window--;
+					}
+				}
+	            //int nw = write(file, p->payload, p->length);
+	            //printf("written %d bytes \n", nw);
+	        }
+	        if (p->type == 1 && p->length == 0 /* && ... */)
+	        {
+				close(client.file);
+				free(p);
+				client.closed = 1;
+	        }
+
+			printf("\nwindow : %d\n", window);
+	        printf("\n_________________________________________________________________________________\n\n");
+		}
+		else
+		{
+			// Vide le buffer
+			while(window < WINDOW_SIZE)
+			{
+				linked_buffer *_buf = process_packet(buffer);
+
+				buffer = _buf;
+				window++;
+			}
+			if (client.closed == 1) keep = 0;
+		}
+
+
+
         //printf("%d\n", n);
 
-        TRTP_packet *p = read_TRTP_packet(buf);
-        printf("type : %d\n", p->type);
-        printf("tr : %d\n", p->tr);
-        printf("window : %d\n", p->window);
-        printf("seqnum : %d\n", p->seqnum);
-        printf("L : %d\n", p->L);
-        printf("length : %d\n", p->length);
-		printf("timestamp : %d\n", p->timestamp);
+
 
         //printf("%s\n", (char *)p->payload);
 
@@ -108,28 +169,11 @@ int main(int argc, char *argv[])
         /*struct hostent *hostp;
         hostp = gethostbyaddr((const char *)&client_addr.sin6_addr, sizeof(client_addr.sin6_addr), AF_INET6);
         printf("Host name: %s\n", hostp->h_name);*/
-        uint32_t CRC2 = crc32(0, p->payload, p->length);
 
-        if ((p->CRC1 != p->nCRC1) || (p->type == 1 && p->length != 0 && CRC2 != p->CRC2))
-        {
-            send_nack(sock, &client_addr, p->seqnum, p->timestamp, window);
-        }
-        else
-        {
-            send_ack(sock, &client_addr, p->seqnum, p->timestamp, window);
-			window -= add_packet(&client, p);
-            //int nw = write(file, p->payload, p->length);
-            //printf("written %d bytes \n", nw);
-        }
-        if (p->type == 1 && p->length == 0 /* && ... */)
-        {
-            keep = 0;
-        }
-		printf("\nwindow : %d\n", window);
-		printf("buffer size : %d\n", client.buf_size);
-        printf("\n_________________________________________________________________________________\n\n");
+
     }
     free(buf);
+	close(sock);
     //close(file);
     return 0;
 }
