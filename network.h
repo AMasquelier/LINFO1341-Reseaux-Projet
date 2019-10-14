@@ -18,23 +18,25 @@ typedef struct linked_buffer
 {
     TRTP_packet *pkt;
     struct linked_buffer *next;
-    uint8_t n;
 } linked_buffer;
 
 typedef struct Client
 {
     struct in6_addr addr;
+    linked_buffer *first;
+    uint8_t buf_size;
 
-    linked_buffer buffers;
-    uint8_t seqnum_min, available_space;
     int file;
+    uint8_t seqnum;
 } Client;
 
-//int create_client(client *c, struct sockaddr *serv_addr, uint32_t port);
+int add_packet(Client *client, TRTP_packet *pkt);
 
-int send_ack(int socket, struct sockaddr_in6 *client, uint8_t seqnum, uint32_t timestamp);
+int create_client(Client *c, struct sockaddr_in6 *serv_addr);
 
-int send_nack(int socket, struct sockaddr_in6 *client, uint8_t seqnum, uint32_t timestamp);
+int send_ack(int socket, struct sockaddr_in6 *client, uint8_t seqnum, uint32_t timestamp, uint8_t window);
+
+int send_nack(int socket, struct sockaddr_in6 *client, uint8_t seqnum, uint32_t timestamp, uint8_t window);
 
 int create_socket(struct sockaddr_in6 *addr, int port);
 

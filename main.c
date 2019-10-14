@@ -19,6 +19,8 @@ int main(int argc, char *argv[])
 {
 	char *file_pattern = "file_%02d.dat";
 	int nb_connections = 100;
+	char *ip = "::";
+	int port;
 	// Reading args
 	for (int i = 1; i < argc; i++)
 	{
@@ -28,20 +30,39 @@ int main(int argc, char *argv[])
 			file_pattern = argv[i+1];
 			i++;
 		}
-		if (strcmp("-m", argv[i]) == 0 && argc > i + 1)
+		else if (strcmp("-m", argv[i]) == 0 && argc > i + 1)
 		{
 			nb_connections = atoi(argv[i+1]);
-			if (nb_connections <= 0) nb_connections = 100;
+			if (nb_connections <= 0)
+			{
+				printf("WARNING : bad number of connections -> set to default (100)\n");
+				nb_connections = 100;
+			}
 			i++;
+		}
+		else
+		{
+			ip = argv[i];
+			if (argc > i + 1)
+			{
+				port = atoi(argv[i+1]);
+				if (port <= 0)
+				{
+					printf("ERROR : bad port number\n");
+					return -1;
+				}
+				i++;
+			}
+			else
+			{
+				printf("ERROR : invalid arguments\n");
+				return -1;
+			}
 		}
 
 	}
 
 
-
-	uint32_t port = 1341;
-	int opt;
-	char *host = "::1";
 
     struct sockaddr_in6 serv_addr, client_addr;
     socklen_t clientsize = sizeof(client_addr);
@@ -50,23 +71,24 @@ int main(int argc, char *argv[])
 
     int sock = create_socket(&serv_addr, port);
 
-    void * buf = malloc(528);
+    void *buf = malloc(528);
 
     //client clients[4];
 	//printf("%s\n", create_name("Salut%02d.dat", n));
 
     int n = 0;
 	int window = WINDOW_SIZE;
-	linked_buffer buffer;
 
-    int keep = 0;
+
+    int keep = 1;
 
     Client client;
+	create_client(&client, NULL);
 
-    uint8_t win_size = 4;
     while (keep)
     {
-        int n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
+        int n_rec = 0;
+		n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
         //printf("%d\n", n);
 
         TRTP_packet *p = read_TRTP_packet(buf);
@@ -82,6 +104,7 @@ int main(int argc, char *argv[])
 
 
 
+
         /*struct hostent *hostp;
         hostp = gethostbyaddr((const char *)&client_addr.sin6_addr, sizeof(client_addr.sin6_addr), AF_INET6);
         printf("Host name: %s\n", hostp->h_name);*/
@@ -89,19 +112,21 @@ int main(int argc, char *argv[])
 
         if ((p->CRC1 != p->nCRC1) || (p->type == 1 && p->length != 0 && CRC2 != p->CRC2))
         {
-            send_nack(sock, &client_addr, p->seqnum, p->timestamp);
+            send_nack(sock, &client_addr, p->seqnum, p->timestamp, window);
         }
         else
         {
-            send_ack(sock, &client_addr, p->seqnum, p->timestamp);
+            send_ack(sock, &client_addr, p->seqnum, p->timestamp, window);
+			window -= add_packet(&client, p);
             //int nw = write(file, p->payload, p->length);
             //printf("written %d bytes \n", nw);
         }
         if (p->type == 1 && p->length == 0 /* && ... */)
         {
-            keep = 1;
+            keep = 0;
         }
-        if (p != NULL) free(p);
+		printf("\nwindow : %d\n", window);
+		printf("buffer size : %d\n", client.buf_size);
         printf("\n_________________________________________________________________________________\n\n");
     }
     free(buf);

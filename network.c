@@ -5,20 +5,47 @@ int compare_ip(struct in6_addr addr1, struct in6_addr addr)
     return 0;
 }
 
-int create_client(Client *c, struct sockaddr_in6 *serv_addr, uint32_t port)
+int add_packet(Client *client, TRTP_packet *pkt)
+{
+    if (pkt == NULL) return 0;
+    if (client->first == NULL)
+    {
+        linked_buffer *buf = (linked_buffer*) malloc(sizeof(linked_buffer));
+        buf->pkt = pkt;
+        buf->next = NULL;
+        client->first = buf;
+        client->buf_size++;
+        return 1;
+    }
+
+    linked_buffer *act = client->first;
+    while (act->next != NULL) act = act->next;
+    linked_buffer *buf = (linked_buffer*) malloc(sizeof(linked_buffer));
+    buf->pkt = pkt;
+    buf->next = NULL;
+    act->next = buf;
+    client->buf_size++;
+    return 1;
+
+}
+
+int create_client(Client *c, struct sockaddr_in6 *serv_addr)
 {
     c->file = open("file.c", O_WRONLY | O_TRUNC | O_CREAT, 0644);
+    c->seqnum = 0;
+    c->first = NULL;
+    c->buf_size = 0;
     return 1;
 }
 
-int send_ack(int socket, struct sockaddr_in6 *client, uint8_t seqnum, uint32_t timestamp)
+int send_ack(int socket, struct sockaddr_in6 *client, uint8_t seqnum, uint32_t timestamp, uint8_t window)
 {
     void *ack = make_ack(seqnum, timestamp);
     sendto(socket, ack, 11, 0, (struct sockaddr *) client, sizeof(*client));
     free(ack);
 }
 
-int send_nack(int socket, struct sockaddr_in6 *client, uint8_t seqnum, uint32_t timestamp)
+int send_nack(int socket, struct sockaddr_in6 *client, uint8_t seqnum, uint32_t timestamp, uint8_t window)
 {
     void *nack = make_nack(seqnum, timestamp);
     sendto(socket, nack, 11, 0, (struct sockaddr *) client, sizeof(*client));
