@@ -8,39 +8,40 @@
 #include "network.h"
 #include "packet.h"
 
+char *create_name(const char *pattern, int n)
+{
+	char *name = (char*)malloc(sizeof(pattern) + 16);
+	sprintf(name, pattern, n);
+	return name;
+}
 
 int main(int argc, char *argv[])
 {
-    int client = 0;
-	int port = 1341;
+	char *file_pattern = "file_%02d.dat";
+	int nb_connections = 100;
+	// Reading args
+	for (int i = 1; i < argc; i++)
+	{
+		printf("%s\n", argv[i]);
+		if (strcmp("-o", argv[i]) == 0 && argc > i + 1)
+		{
+			file_pattern = argv[i+1];
+			i++;
+		}
+		if (strcmp("-m", argv[i]) == 0 && argc > i + 1)
+		{
+			nb_connections = atoi(argv[i+1]);
+			if (nb_connections <= 0) nb_connections = 100;
+			i++;
+		}
+
+	}
+
+
+
+	uint32_t port = 1341;
 	int opt;
 	char *host = "::1";
-
-    /*uint32_t test = 0xd18132f4;
-    void * p = malloc(64);
-    memcpy(p, &test, 32);
-    memcpy(p+32, &test, 32);
-
-    TRTP_packet pkt = read_TRTP_packet(p);
-
-
-    printf("%d\n", pkt.length);
-    printf("%d\n", pkt.L);
-    printf("%zu\n", test);
-    printf("%zu\n", pkt.timestamp);*/
-
-
-    /*// Test format ACK
-    void *pck = make_ack(0, 4);
-
-    display_byte_representation(pck, 15);
-
-    TRTP_packet p = read_TRTP_packet(pck);
-    printf("type : %d\n", p.type);
-    printf("tr : %d\n", p.tr);
-    printf("window : %d\n", p.window);
-    printf("seqnum : %d\n", p.seqnum);
-    printf("timestamp : %d\n", p.timestamp);*/
 
     struct sockaddr_in6 serv_addr, client_addr;
     socklen_t clientsize = sizeof(client_addr);
@@ -49,62 +50,61 @@ int main(int argc, char *argv[])
 
     int sock = create_socket(&serv_addr, port);
 
-    void * msg = malloc(528);
+    void * buf = malloc(528);
 
+    //client clients[4];
+	//printf("%s\n", create_name("Salut%02d.dat", n));
 
-    int n;
-    int keep = 1;
+    int n = 0;
+	int window = WINDOW_SIZE;
+	linked_buffer buffer;
 
-    int file = open("file.c", O_WRONLY | O_TRUNC | O_CREAT, 0644);
-    printf("file : %d\n", file);
+    int keep = 0;
 
+    Client client;
+
+    uint8_t win_size = 4;
     while (keep)
     {
-        n = recvfrom(sock, msg, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
-        printf("%d\n", n);
+        int n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
+        //printf("%d\n", n);
 
-        TRTP_packet *p = read_TRTP_packet(msg);
+        TRTP_packet *p = read_TRTP_packet(buf);
         printf("type : %d\n", p->type);
         printf("tr : %d\n", p->tr);
         printf("window : %d\n", p->window);
         printf("seqnum : %d\n", p->seqnum);
         printf("L : %d\n", p->L);
         printf("length : %d\n", p->length);
+		printf("timestamp : %d\n", p->timestamp);
 
         //printf("%s\n", (char *)p->payload);
 
 
+
+        /*struct hostent *hostp;
+        hostp = gethostbyaddr((const char *)&client_addr.sin6_addr, sizeof(client_addr.sin6_addr), AF_INET6);
+        printf("Host name: %s\n", hostp->h_name);*/
         uint32_t CRC2 = crc32(0, p->payload, p->length);
 
-        if (p->type == 1 && p->length != 0 && CRC2 != p->CRC2)
+        if ((p->CRC1 != p->nCRC1) || (p->type == 1 && p->length != 0 && CRC2 != p->CRC2))
         {
-            printf("CRC2 different !  %d  :  %d \n", CRC2, p->CRC2);
-            void *nack = make_nack(p->seqnum);
-            sendto(sock, nack, 15, 0, (struct sockaddr *) &client_addr, clientsize);
-            free(nack);
-        }
-        else if (p->CRC1 != p->nCRC1)
-        {
-            printf("CRC1 different !");
-            void *nack = make_nack(p->seqnum);
-            sendto(sock, msg, 15, 0, (struct sockaddr *) &client_addr, clientsize);
-            free(nack);
+            send_nack(sock, &client_addr, p->seqnum, p->timestamp);
         }
         else
         {
-            void *ack = make_ack(p->seqnum, p->timestamp);
-            sendto(sock, ack, 15, 0, (struct sockaddr *) &client_addr, clientsize);
-            free(ack);
-            int nw = write(file, p->payload, p->length);
-            printf("written %d bytes \n", nw);
+            send_ack(sock, &client_addr, p->seqnum, p->timestamp);
+            //int nw = write(file, p->payload, p->length);
+            //printf("written %d bytes \n", nw);
         }
         if (p->type == 1 && p->length == 0 /* && ... */)
         {
-            keep = 0;
+            keep = 1;
         }
         if (p != NULL) free(p);
         printf("\n_________________________________________________________________________________\n\n");
     }
-    close(file);
+    free(buf);
+    //close(file);
     return 0;
 }

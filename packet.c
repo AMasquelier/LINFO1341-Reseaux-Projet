@@ -92,8 +92,8 @@ typedef struct ls16
 
 void *make_ack(uint8_t seqnum, uint32_t timestamp)
 {
-    void *ret = malloc(15);
-    bzero(ret, 15);
+    void *ret = malloc(11);
+    bzero(ret, 11);
 
     ttw _ttw;
     _ttw.type    = 2;
@@ -112,20 +112,18 @@ void *make_ack(uint8_t seqnum, uint32_t timestamp)
     timestamp = htonl(timestamp);
     memcpy(ret + 3, &timestamp, 4);
 
-    uint32_t CRC1, CRC2 = 0;
+    uint32_t CRC1;
     CRC1 = crc32(0, ret, 7);
     CRC1 = htonl(CRC1);
     memcpy(ret + 7, &CRC1, 4);
 
-    memcpy(ret + 11, &CRC2, 4);
-
     return ret;
 }
 
-void *make_nack(uint8_t seqnum)
+void *make_nack(uint8_t seqnum, uint32_t timestamp)
 {
-    void *ret = malloc(15);
-    bzero(ret, 15);
+    void *ret = malloc(11);
+    bzero(ret, 11);
 
     ttw _ttw;
     _ttw.type    = 3;
@@ -141,15 +139,13 @@ void *make_nack(uint8_t seqnum)
     uint8_t sn  = seqnum;
     memcpy(ret + 2, &sn, 1);
 
-    uint32_t timestamp = 0;
     memcpy(ret + 3, &timestamp, 4);
 
-    uint32_t CRC1, CRC2 = 0;
+    uint32_t CRC1;
     CRC1 = crc32(0, ret, 7);
     CRC1 = htonl(CRC1);
     memcpy(ret + 7, &CRC1, 4);
 
-    memcpy(ret + 11, &CRC2, 4);
 
     return ret;
 }

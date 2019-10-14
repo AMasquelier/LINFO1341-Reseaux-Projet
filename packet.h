@@ -1,3 +1,6 @@
+#ifndef PACKET_H
+#define PACKET_H
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -27,6 +30,8 @@ void display_byte_representation(void *data, long size);
 
 void *make_ack(uint8_t seqnum, uint32_t timestamp);
 
-void *make_nack(uint8_t seqnum);
+void *make_nack(uint8_t seqnum, uint32_t timestamp);
 
 TRTP_packet *read_TRTP_packet(void *packet);
+
+#endif

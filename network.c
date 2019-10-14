@@ -1,6 +1,29 @@
 #include "network.h"
 
+int compare_ip(struct in6_addr addr1, struct in6_addr addr)
+{
+    return 0;
+}
 
+int create_client(Client *c, struct sockaddr_in6 *serv_addr, uint32_t port)
+{
+    c->file = open("file.c", O_WRONLY | O_TRUNC | O_CREAT, 0644);
+    return 1;
+}
+
+int send_ack(int socket, struct sockaddr_in6 *client, uint8_t seqnum, uint32_t timestamp)
+{
+    void *ack = make_ack(seqnum, timestamp);
+    sendto(socket, ack, 11, 0, (struct sockaddr *) client, sizeof(*client));
+    free(ack);
+}
+
+int send_nack(int socket, struct sockaddr_in6 *client, uint8_t seqnum, uint32_t timestamp)
+{
+    void *nack = make_nack(seqnum, timestamp);
+    sendto(socket, nack, 11, 0, (struct sockaddr *) client, sizeof(*client));
+    free(nack);
+}
 
 
 int create_socket(struct sockaddr_in6 *addr, int port)

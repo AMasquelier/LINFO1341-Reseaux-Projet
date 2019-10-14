@@ -8,39 +8,11 @@
 #include "network.h"
 #include "packet.h"
 
-
 int main(int argc, char *argv[])
 {
-    int client = 0;
-	int port = 1341;
+	uint32_t port = 1341;
 	int opt;
 	char *host = "::1";
-
-    /*uint32_t test = 0xd18132f4;
-    void * p = malloc(64);
-    memcpy(p, &test, 32);
-    memcpy(p+32, &test, 32);
-
-    TRTP_packet pkt = read_TRTP_packet(p);
-
-
-    printf("%d\n", pkt.length);
-    printf("%d\n", pkt.L);
-    printf("%zu\n", test);
-    printf("%zu\n", pkt.timestamp);*/
-
-
-    /*// Test format ACK
-    void *pck = make_ack(0, 4);
-
-    display_byte_representation(pck, 15);
-
-    TRTP_packet p = read_TRTP_packet(pck);
-    printf("type : %d\n", p.type);
-    printf("tr : %d\n", p.tr);
-    printf("window : %d\n", p.window);
-    printf("seqnum : %d\n", p.seqnum);
-    printf("timestamp : %d\n", p.timestamp);*/
 
     struct sockaddr_in6 serv_addr, client_addr;
     socklen_t clientsize = sizeof(client_addr);
@@ -51,17 +23,21 @@ int main(int argc, char *argv[])
 
     void * msg = malloc(528);
 
+    //client clients[4];
+	printf("       %s  ", client_addr.sin6_addr);
 
-    int n;
+    int n = 0;
     int keep = 1;
+
+    Client client;
 
     int file = open("file.c", O_WRONLY | O_TRUNC | O_CREAT, 0644);
     printf("file : %d\n", file);
-
+    uint8_t win_size = 4;
     while (keep)
     {
-        n = recvfrom(sock, msg, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
-        printf("%d\n", n);
+        int n_rec = recvfrom(sock, msg, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
+        //printf("%d\n", n);
 
         TRTP_packet *p = read_TRTP_packet(msg);
         printf("type : %d\n", p->type);
@@ -70,41 +46,34 @@ int main(int argc, char *argv[])
         printf("seqnum : %d\n", p->seqnum);
         printf("L : %d\n", p->L);
         printf("length : %d\n", p->length);
+		printf("timestamp : %d\n", p->timestamp);
+		printf("       %s  ", client_addr.sin6_addr);
 
         //printf("%s\n", (char *)p->payload);
 
-
+        struct hostent *hostp;
+        hostp = gethostbyaddr((const char *)&client_addr.sin6_addr, sizeof(client_addr.sin6_addr), AF_INET6);
+        printf("Host name: %s\n", hostp->h_name);
         uint32_t CRC2 = crc32(0, p->payload, p->length);
 
-        if (p->type == 1 && p->length != 0 && CRC2 != p->CRC2)
+        if ((p->CRC1 != p->nCRC1) || (p->type == 1 && p->length != 0 && CRC2 != p->CRC2))
         {
-            printf("CRC2 different !  %d  :  %d \n", CRC2, p->CRC2);
-            void *nack = make_nack(p->seqnum);
-            sendto(sock, nack, 15, 0, (struct sockaddr *) &client_addr, clientsize);
-            free(nack);
-        }
-        else if (p->CRC1 != p->nCRC1)
-        {
-            printf("CRC1 different !");
-            void *nack = make_nack(p->seqnum);
-            sendto(sock, msg, 15, 0, (struct sockaddr *) &client_addr, clientsize);
-            free(nack);
+            send_nack(sock, &client_addr, p->seqnum, p->timestamp);
         }
         else
         {
-            void *ack = make_ack(p->seqnum, p->timestamp);
-            sendto(sock, ack, 15, 0, (struct sockaddr *) &client_addr, clientsize);
-            free(ack);
+            send_ack(sock, &client_addr, p->seqnum, p->timestamp);
             int nw = write(file, p->payload, p->length);
-            printf("written %d bytes \n", nw);
+            //printf("written %d bytes \n", nw);
         }
         if (p->type == 1 && p->length == 0 /* && ... */)
         {
-            keep = 0;
+            keep = 1;
         }
         if (p != NULL) free(p);
         printf("\n_________________________________________________________________________________\n\n");
     }
+    free(msg);
     close(file);
     return 0;
 }
