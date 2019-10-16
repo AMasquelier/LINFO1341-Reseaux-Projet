@@ -1,179 +1,230 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-
-#include "network.h"
 #include "packet.h"
 
-char *create_name(const char *pattern, int n)
+uint32_t crc32(uint32_t crc, char *buf, size_t len)
 {
-	char *name = (char*)malloc(sizeof(pattern) + 16);
-	sprintf(name, pattern, n);
-	return name;
-}
+	static uint32_t table[256];
+	static int have_table = 0;
+	uint32_t rem;
+	uint8_t octet;
+	int i, j;
+	const char *p, *q;
 
-int main(int argc, char *argv[])
-{
-	char *file_pattern = "file_%02d.dat";
-	int nb_connections = 100;
-	char *ip = "::";
-	int port;
-	// Reading args
-	for (int i = 1; i < argc; i++)
-	{
-		printf("%s\n", argv[i]);
-		if (strcmp("-o", argv[i]) == 0 && argc > i + 1)
-		{
-			file_pattern = argv[i+1];
-			i++;
-		}
-		else if (strcmp("-m", argv[i]) == 0 && argc > i + 1)
-		{
-			nb_connections = atoi(argv[i+1]);
-			if (nb_connections <= 0)
-			{
-				printf("WARNING : bad number of connections -> set to default (100)\n");
-				nb_connections = 100;
+	/* This check is not thread safe; there is no mutex. */
+	if (have_table == 0) {
+		/* Calculate CRC table. */
+		for (i = 0; i < 256; i++) {
+			rem = i;  /* remainder from polynomial division */
+			for (j = 0; j < 8; j++) {
+				if (rem & 1) {
+					rem >>= 1;
+					rem ^= 0xedb88320;
+				} else
+					rem >>= 1;
 			}
-			i++;
+			table[i] = rem;
 		}
-		else
-		{
-			ip = argv[i];
-			if (argc > i + 1)
-			{
-				port = atoi(argv[i+1]);
-				if (port <= 0)
-				{
-					printf("ERROR : bad port number\n");
-					return -1;
-				}
-				i++;
-			}
-			else
-			{
-				printf("ERROR : invalid arguments\n");
-				return -1;
-			}
-		}
-
+		have_table = 1;
 	}
 
+	crc = ~crc;
+	q = buf + len;
+	for (p = buf; p < q; p++) {
+		octet = *p;  /* Cast to unsigned octet. */
+		crc = (crc >> 8) ^ table[(crc & 0xff) ^ octet];
+	}
+	return ~crc;
+}
 
-	fd_set rset;
-    struct sockaddr_in6 serv_addr, client_addr;
-    bzero(&client_addr, sizeof(client_addr));
+void print_packet(TRTP_packet *pkt)
+{
+	printf("\n_________________________________________________________________________________\n\n");
+	printf("type : %d\n", pkt->type);
+	printf("tr : %d\n", pkt->tr);
+	printf("window : %d\n", pkt->window);
+	printf("seqnum : %d\n", pkt->seqnum);
+	printf("L : %d\n", pkt->L);
+	printf("length : %d\n", pkt->length);
+	printf("timestamp : %d\n", pkt->timestamp);
+	printf("\n_________________________________________________________________________________\n\n");
+}
 
-    int sock = create_socket(&serv_addr, port);
+void destroy_packet(TRTP_packet *pkt)
+{
+	if (pkt != NULL)
+	{
+		if (pkt->length > 0) free(pkt->payload);
 
-	FD_ZERO(&rset);
+		free(pkt);
+	}
+}
 
-    void *buf = malloc(528);
+void display_byte(uint8_t byte)
+{
+    for (int j = 0; j < 8;  j++) printf("%d", ((byte >> (7-j)) & 1));
+    printf(" ");
+}
 
-    //client clients[4];
-	//printf("%s\n", create_name("Salut%02d.dat", n));
-
-    int n = 0;
-	int window = WINDOW_SIZE;
-	linked_buffer *buffer = NULL;
-
-
-    int keep = 1;
-
-    Client client;
-	create_client(&client, NULL);
-
-	struct timeval timeout;
-	timeout.tv_sec = 4;
-	timeout.tv_usec = 150000;
-
-    while (keep)
+void display_byte_representation(void *data, long size)
+{
+    uint8_t byte;
+    for (long i = 0; i < size; i++)
     {
-        int n_rec = 0;
-
-		FD_SET(sock, &rset);
-		int nready = select(sock+1, &rset, NULL, NULL, &timeout);
-
-		if (window > 0 && FD_ISSET(sock, &rset))
-		{
-			socklen_t clientsize = sizeof(client_addr);
-			n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
-
-			TRTP_packet *p = read_TRTP_packet(buf);
-	        printf("type : %d\n", p->type);
-	        printf("tr : %d\n", p->tr);
-	        printf("window : %d\n", p->window);
-	        printf("seqnum : %d\n", p->seqnum);
-	        printf("L : %d\n", p->L);
-	        printf("length : %d\n", p->length);
-			printf("timestamp : %d\n", p->timestamp);
-
-			uint32_t CRC2 = crc32(0, p->payload, p->length);
-
-	        if ((p->CRC1 != p->nCRC1) || (p->type == 1 && p->length != 0 && CRC2 != p->CRC2))
-	        {
-	            send_nack(sock, &client_addr, p->seqnum, p->timestamp, window);
-	        }
-	        else
-	        {
-	            send_ack(sock, &client_addr, p->seqnum, p->timestamp, window);
-				if (p->length > 0)
-				{
-					linked_buffer *_buf = add_packet(buffer, &client, p);
-					if (_buf != NULL)
-					{
-						buffer = _buf;
-						window--;
-					}
-				}
-	            //int nw = write(file, p->payload, p->length);
-	            //printf("written %d bytes \n", nw);
-	        }
-	        if (p->type == 1 && p->length == 0 /* && ... */)
-	        {
-				close(client.file);
-				free(p);
-				client.closed = 1;
-	        }
-
-			printf("\nwindow : %d\n", window);
-	        printf("\n_________________________________________________________________________________\n\n");
-		}
-		else
-		{
-			// Vide le buffer
-			while(window < WINDOW_SIZE)
-			{
-				linked_buffer *_buf = process_packet(buffer);
-
-				buffer = _buf;
-				window++;
-			}
-			if (client.closed == 1) keep = 0;
-		}
-
-
-
-        //printf("%d\n", n);
-
-
-
-        //printf("%s\n", (char *)p->payload);
-
-
-
-
-        /*struct hostent *hostp;
-        hostp = gethostbyaddr((const char *)&client_addr.sin6_addr, sizeof(client_addr.sin6_addr), AF_INET6);
-        printf("Host name: %s\n", hostp->h_name);*/
-
-
+        memcpy(&byte, data + i, 1);
+        display_byte(byte);
     }
-    free(buf);
-	close(sock);
-    //close(file);
-    return 0;
+    printf("\n");
+    for (long i = 0; i < size; i++)
+    {
+        memcpy(&byte, data + i, 1);
+        printf("%02X ", byte);
+    }
+    printf("\n");
+}
+
+
+typedef struct ttw
+{
+    uint8_t window : 5, tr : 1, type : 2;
+}ttw;
+
+typedef struct ls8
+{
+    uint8_t length : 7, L : 1;
+}ls8;
+
+typedef struct ls16
+{
+    uint16_t length : 15, L : 1;
+}ls16;
+
+
+void *make_ack(uint8_t seqnum, uint32_t timestamp, uint8_t window)
+{
+    void *ret = malloc(11);
+    bzero(ret, 11);
+
+    ttw _ttw;
+    _ttw.type    = 2;
+    _ttw.tr      = 0;
+    _ttw.window  = window;
+    memcpy(ret, &_ttw, 1);
+
+    ls8 _ls;
+    _ls.L        = 0;
+    _ls.length   = 0;
+    memcpy(ret + 1, &_ls, 1);
+
+    uint8_t sn  = (seqnum + 1) % 256;
+    memcpy(ret + 2, &sn, 1);
+
+    timestamp = htonl(timestamp);
+    memcpy(ret + 3, &timestamp, 4);
+
+    uint32_t CRC1;
+    CRC1 = crc32(0, ret, 7);
+    CRC1 = htonl(CRC1);
+    memcpy(ret + 7, &CRC1, 4);
+
+    return ret;
+}
+
+void *make_nack(uint8_t seqnum, uint32_t timestamp, uint8_t window)
+{
+    void *ret = malloc(11);
+    bzero(ret, 11);
+
+    ttw _ttw;
+    _ttw.type    = 3;
+    _ttw.tr      = 0;
+    _ttw.window  = window;
+    memcpy(ret, &_ttw, 1);
+
+    ls8 _ls;
+    _ls.L        = 0;
+    _ls.length   = 0;
+    memcpy(ret + 1, &_ls, 1);
+
+    uint8_t sn  = seqnum;
+    memcpy(ret + 2, &sn, 1);
+
+    memcpy(ret + 3, &timestamp, 4);
+
+    uint32_t CRC1;
+    CRC1 = crc32(0, ret, 7);
+    CRC1 = htonl(CRC1);
+    memcpy(ret + 7, &CRC1, 4);
+
+
+    return ret;
+}
+
+TRTP_packet *read_TRTP_packet(void *packet)
+{
+    TRTP_packet *pkt = (TRTP_packet*)malloc(sizeof(TRTP_packet));
+    uint32_t header;
+
+    memcpy(&header, packet, 4);
+    //display_byte_representation(&header, 4);
+    header = htonl(header);
+    uint8_t bits[32];
+	for (int i = 31; i >= 0; i--) bits[31-i] = ((header >> i) & 1);
+    //for (int i = 0; i < 32; i++) printf("%d", bits[i]); printf("\n");
+
+    // Type
+	pkt->type = bits[0] * 2 + bits[1];
+
+    // Truncated ?
+	pkt->tr = bits[2];
+    // Window
+	for (int i = 0; i < 5; i++) pkt->window = 2 * pkt->window + bits[3 + i];
+    // L
+
+	pkt->L = bits[8];
+    // Length
+	if (pkt->L)
+	{
+		uint16_t buf;
+		memcpy(&buf, packet + 1, 2);
+		buf = ntohs(buf);
+
+		ls16 ls;
+		memcpy(&ls, &buf, 2);
+		pkt->length = ls.length;
+
+	}
+	else
+	{
+		ls8 ls;
+		memcpy(&ls, packet + 1, 1);
+		pkt->length = ls.length;
+	}
+
+    memcpy(&pkt->seqnum, packet + 2 + pkt->L, 1);
+    if (pkt->L) pkt->seqnum = pkt->seqnum;
+
+	if ((pkt->type != 1 && pkt->tr) || pkt->length > 512) printf("Ignored\n");
+
+	if (pkt->type == 1 && pkt->length == 0 /* && ... */) printf("Transfer ended\n");
+
+    // Timestamp
+    memcpy(&pkt->timestamp, packet + 3 + pkt->L, 4);
+    pkt->timestamp = ntohl(pkt->timestamp);
+	uint32_t CRC1, CRC2;
+    // CRC1
+    pkt->nCRC1 = crc32(0, packet, 7 + pkt->L);
+    memcpy(&pkt->CRC1, packet + 7 + pkt->L, 4);
+    pkt->CRC1 = ntohl(pkt->CRC1);
+
+    // CRC2
+    memcpy(&pkt->CRC2, packet + 11 + pkt->L + pkt->length, 4);
+    pkt->CRC2 = ntohl(pkt->CRC2);
+	CRC2 = crc32(0, packet + 11 + pkt->L, pkt->length);
+
+    // Payload
+	pkt->payload = NULL;
+    if(pkt->length > 0) pkt->payload = malloc(pkt->length);
+    memcpy(pkt->payload, packet + 11 + pkt->L, pkt->length);
+
+
+    return pkt;
 }

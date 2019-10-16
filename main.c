@@ -21,6 +21,8 @@ int main(int argc, char *argv[])
 	int nb_connections = 100;
 	char *ip = "::";
 	int port;
+
+
 	// Reading args
 	for (int i = 1; i < argc; i++)
 	{
@@ -77,7 +79,6 @@ int main(int argc, char *argv[])
 	//printf("%s\n", create_name("Salut%02d.dat", n));
 
     int n = 0;
-	int window = WINDOW_SIZE;
 	linked_buffer *buffer = NULL;
 
 
@@ -87,7 +88,7 @@ int main(int argc, char *argv[])
 	create_client(&client, NULL);
 
 	struct timeval timeout;
-	timeout.tv_sec = 4;
+	timeout.tv_sec = 1;
 	timeout.tv_usec = 150000;
 
     while (keep)
@@ -97,83 +98,61 @@ int main(int argc, char *argv[])
 		FD_SET(sock, &rset);
 		int nready = select(sock+1, &rset, NULL, NULL, &timeout);
 
-		if (window > 0 && FD_ISSET(sock, &rset))
+
+		if (FD_ISSET(sock, &rset))
 		{
 			socklen_t clientsize = sizeof(client_addr);
 			n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
 
-			TRTP_packet *p = read_TRTP_packet(buf);
-	        printf("type : %d\n", p->type);
-	        printf("tr : %d\n", p->tr);
-	        printf("window : %d\n", p->window);
-	        printf("seqnum : %d\n", p->seqnum);
-	        printf("L : %d\n", p->L);
-	        printf("length : %d\n", p->length);
-			printf("timestamp : %d\n", p->timestamp);
 
+			TRTP_packet *p = read_TRTP_packet(buf);
+			//print_packet(p);
 			uint32_t CRC2 = crc32(0, p->payload, p->length);
 
-	        if ((p->CRC1 != p->nCRC1) || (p->type == 1 && p->length != 0 && CRC2 != p->CRC2))
+			if (client.window == 0										||
+				!is_in_window((client.seqnum+1)%256, WINDOW_SIZE, p->seqnum) ||
+				p->type > 3 || p->type < 1 								||
+				(p->tr != 0 && p->type != 1) 							||
+				p->length > 512											||
+				(p->CRC1 != p->nCRC1) 									||
+				(p->type == 1 && p->length != 0 && CRC2 != p->CRC2))
+			{
+				// Ignore
+				destroy_packet(p);
+			}
+	        else if (p->type == 1 && p->tr == 1)
 	        {
-	            send_nack(sock, &client_addr, p->seqnum, p->timestamp, window);
-	        }
+	            send_nack(sock, &client_addr, p->seqnum, p->timestamp, client.window);
+				destroy_packet(p);
+		    }
 	        else
 	        {
-	            send_ack(sock, &client_addr, p->seqnum, p->timestamp, window);
-				if (p->length > 0)
-				{
-					linked_buffer *_buf = add_packet(buffer, &client, p);
-					if (_buf != NULL)
-					{
-						buffer = _buf;
-						window--;
-					}
-				}
-	            //int nw = write(file, p->payload, p->length);
-	            //printf("written %d bytes \n", nw);
+	            send_ack(sock, &client_addr, client.seqnum, client.timestamp, client.window);
+				buffer = add_packet(buffer, &client, p);
+				//if (buffer != NULL) printf("Buffer size : %d\n", buffer->size);
 	        }
-	        if (p->type == 1 && p->length == 0 /* && ... */)
-	        {
-				close(client.file);
-				free(p);
-				client.closed = 1;
-	        }
-
-			printf("\nwindow : %d\n", window);
-	        printf("\n_________________________________________________________________________________\n\n");
+			//printf("Window : %d\n", client.window);
 		}
 		else
 		{
 			// Vide le buffer
-			while(window < WINDOW_SIZE)
-			{
-				linked_buffer *_buf = process_packet(buffer);
 
-				buffer = _buf;
-				window++;
+			buffer = process_packet(buffer);
+			//if (buffer != NULL) printf("Buffer size : %d\n", buffer->size);
+			if (client.closed == 1)
+			{
+				keep = 0;
+				send_ack(sock, &client_addr, client.seqnum, client.timestamp, client.window);
 			}
-			if (client.closed == 1) keep = 0;
 		}
 
 
 
-        //printf("%d\n", n);
-
-
-
-        //printf("%s\n", (char *)p->payload);
-
-
-
-
-        /*struct hostent *hostp;
-        hostp = gethostbyaddr((const char *)&client_addr.sin6_addr, sizeof(client_addr.sin6_addr), AF_INET6);
-        printf("Host name: %s\n", hostp->h_name);*/
-
-
     }
+	//if (buffer != NULL) printf("Buffer size : %d\n", buffer->size);
+	flush_buffer(buffer);
     free(buf);
 	close(sock);
-    //close(file);
+
     return 0;
 }

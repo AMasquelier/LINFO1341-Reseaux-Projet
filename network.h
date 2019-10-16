@@ -12,7 +12,7 @@
 #include <inttypes.h>
 #include "packet.h"
 
-#define WINDOW_SIZE 4
+#define WINDOW_SIZE 16
 
 typedef struct Client
 {
@@ -21,6 +21,8 @@ typedef struct Client
     int file;
     uint8_t seqnum;
     uint8_t closed;
+    uint8_t window;
+    uint32_t timestamp;
 } Client;
 
 typedef struct linked_buffer
@@ -28,7 +30,12 @@ typedef struct linked_buffer
     TRTP_packet *pkt;
     struct linked_buffer *next;
     Client *client;
+    int size;
 } linked_buffer;
+
+void flush_buffer(linked_buffer *buffer);
+
+int is_in_window(uint8_t min, uint8_t window, uint8_t seqnum);
 
 linked_buffer* add_packet(linked_buffer *first, Client *client, TRTP_packet *pkt);
 

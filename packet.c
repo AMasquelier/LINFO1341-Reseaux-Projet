@@ -1,20 +1,5 @@
 #include "packet.h"
 
-// CRC32 implementation found on http://home.thep.lu.se/~bjorn/crc/
-/*uint32_t crc32_for_byte(uint32_t r) {
-  for(int j = 0; j < 8; ++j)
-    r = (r & 1? 0: (uint32_t)0xEDB88320L) ^ r >> 1;
-  return r ^ (uint32_t)0xFF000000L;
-}
-
-void crc32(const void *data, size_t n_bytes, uint32_t* crc) {
-  static uint32_t table[0x100];
-  if(!*table)
-    for(size_t i = 0; i < 0x100; ++i)
-      table[i] = crc32_for_byte(i);
-  for(size_t i = 0; i < n_bytes; ++i)
-    *crc = table[(uint8_t)*crc ^ ((uint8_t*)data)[i]] ^ *crc >> 8;
-}*/
 uint32_t crc32(uint32_t crc, char *buf, size_t len)
 {
 	static uint32_t table[256];
@@ -49,9 +34,32 @@ uint32_t crc32(uint32_t crc, char *buf, size_t len)
 	}
 	return ~crc;
 }
+
+void print_packet(TRTP_packet *pkt)
+{
+	printf("\n_________________________________________________________________________________\n\n");
+	printf("type : %d\n", pkt->type);
+	printf("tr : %d\n", pkt->tr);
+	printf("window : %d\n", pkt->window);
+	printf("seqnum : %d\n", pkt->seqnum);
+	printf("L : %d\n", pkt->L);
+	printf("length : %d\n", pkt->length);
+	printf("timestamp : %d\n", pkt->timestamp);
+	printf("\n_________________________________________________________________________________\n\n");
+}
+
+void destroy_packet(TRTP_packet *pkt)
+{
+	if (pkt != NULL)
+	{
+		if (pkt->length > 0) free(pkt->payload);
+
+		free(pkt);
+	}
+}
+
 void display_byte(uint8_t byte)
 {
-    uint8_t bits[8];
     for (int j = 0; j < 8;  j++) printf("%d", ((byte >> (7-j)) & 1));
     printf(" ");
 }
@@ -213,6 +221,7 @@ TRTP_packet *read_TRTP_packet(void *packet)
 	CRC2 = crc32(0, packet + 11 + pkt->L, pkt->length);
 
     // Payload
+	pkt->payload = NULL;
     if(pkt->length > 0) pkt->payload = malloc(pkt->length);
     memcpy(pkt->payload, packet + 11 + pkt->L, pkt->length);
 
