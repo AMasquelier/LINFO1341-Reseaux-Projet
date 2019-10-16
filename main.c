@@ -127,7 +127,6 @@ int main(int argc, char *argv[])
 		    }
 	        else
 	        {
-	            send_ack(sock, &client_addr, client.seqnum, client.timestamp, client.window);
 				buffer = add_packet(buffer, &client, p);
 				//if (buffer != NULL) printf("Buffer size : %d\n", buffer->size);
 	        }
@@ -136,21 +135,17 @@ int main(int argc, char *argv[])
 		else
 		{
 			// Vide le buffer
-
 			buffer = process_packet(buffer);
 			//if (buffer != NULL) printf("Buffer size : %d\n", buffer->size);
+			send_ack(sock, &client_addr, client.seqnum, client.timestamp, client.window);
 			if (client.closed == 1)
 			{
 				keep = 0;
 				send_ack(sock, &client_addr, client.seqnum, client.timestamp, client.window);
 			}
 		}
-
-
-
     }
-	//if (buffer != NULL) printf("Buffer size : %d\n", buffer->size);
-	flush_buffer(buffer);
+	flush_buffer(buffer); //Vide le buffer au cas où il ne serait pas vide (Pas supposé arriver)
     free(buf);
 	close(sock);
 

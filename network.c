@@ -61,7 +61,7 @@ linked_buffer* process_packet(linked_buffer *buffer)
         if (buffer->pkt->length > 0)
         {
             int nw = write(buffer->client->file, buffer->pkt->payload, buffer->pkt->length);
-            printf("written %d bytes \n", nw);
+            //printf("written %d bytes \n", nw);
         }
         else
         {

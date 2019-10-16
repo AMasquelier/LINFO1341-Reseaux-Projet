@@ -12,7 +12,7 @@
 #include <inttypes.h>
 #include "packet.h"
 
-#define WINDOW_SIZE 16
+#define WINDOW_SIZE 4
 
 typedef struct Client
 {
