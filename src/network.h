@@ -23,6 +23,7 @@ typedef struct Client
     uint8_t closed;
     uint8_t window;
     uint32_t timestamp;
+    uint8_t send_ack;
 } Client;
 
 typedef struct linked_buffer

@@ -1,0 +1,241 @@
+commit 51f9adcc6252f612af0cb22605dd1eab5f4b4089
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Wed Oct 16 20:37:30 2019 +0200
+
+    Améliorations
+
+ main.c    |   9 ++-------
+ network.c |   2 +-
+ network.h |   2 +-
+ receiver  | Bin 22600 -> 22600 bytes
+ 4 files changed, 4 insertions(+), 9 deletions(-)
+
+commit ebc91067c9f80bd9c8045f2c3b9cd948b977529d
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Wed Oct 16 13:54:08 2019 +0200
+
+    Protocole
+
+ file.c    | 341 ++++++++++++++++++++++++++++++++++++--------------------------
+ main.c    |  91 +++++++----------
+ network.c |  99 +++++++++++++-----
+ network.h |   9 +-
+ packet.c  |  41 +++++---
+ packet.h  |   4 +
+ receiver  | Bin 22448 -> 22600 bytes
+ 7 files changed, 342 insertions(+), 243 deletions(-)
+
+commit ba4e1f65ce1c5729e55fc777d32838dced0eeb40
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Tue Oct 15 10:01:05 2019 +0200
+
+    Makefile
+
+ Makefile |   2 ++
+ receiver | Bin 0 -> 22448 bytes
+ 2 files changed, 2 insertions(+)
+
+commit 7c789a8f5428b7aa556668120b5fe02b1c7bf574
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Tue Oct 15 00:54:00 2019 +0200
+
+    Protocole + fuites de mémoire
+
+ file.c    | 179 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ main.c    | 108 ++++++++++++++++++++++++++-----------
+ network.c |  40 +++++++++-----
+ network.h |  20 +++----
+ packet.c  |  10 ++--
+ packet.h  |   4 +-
+ test      | Bin 22344 -> 22448 bytes
+ 7 files changed, 300 insertions(+), 61 deletions(-)
+
+commit 830c157d932f4d62c3767c0bc259e55370eb7b9f
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Mon Oct 14 21:14:10 2019 +0200
+
+    Linked buffer
+
+ file.c    |  79 --------------------------------------------------------------
+ main.c    |  55 +++++++++++++++++++++++++++++++------------
+ network.c |  33 +++++++++++++++++++++++---
+ network.h |  14 ++++++-----
+ test      | Bin 22304 -> 22344 bytes
+ 5 files changed, 78 insertions(+), 103 deletions(-)
+
+commit 257820deefe560faaceba3b29dbf9c0dc42ec660
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Mon Oct 14 16:29:37 2019 +0200
+
+    a
+
+ file.c    |  71 ++++++++++++----------------------------
+ infile    |  23 -------------
+ main.c    | 110 +++++++++++++++++++++++++++++++-------------------------------
+ network.c |  23 +++++++++++++
+ network.h |  32 ++++++++++++++++--
+ packet.c  |  18 ++++------
+ packet.h  |   7 +++-
+ test      | Bin 22024 -> 22304 bytes
+ 8 files changed, 141 insertions(+), 143 deletions(-)
+
+commit 5e301816c80596e799810ee77dd46c22cf514478
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Fri Oct 11 22:10:45 2019 +0200
+
+    Echange de fichier réussi
+
+ file.c   | 110 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ infile   |  23 ++++++++++++
+ main.c   |  74 +++++++++++++++++++++++++++++++-------
+ packet.c | 124 +++++++++++++++++++++++++++++++++++++++++++++------------------
+ packet.h |  11 +++---
+ sender   | Bin 0 -> 35024 bytes
+ test     | Bin 17648 -> 22024 bytes
+ 7 files changed, 290 insertions(+), 52 deletions(-)
+
+commit de298cedf59a33d5c0a5e5274e1febacde1ab368
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Mon Oct 7 19:50:13 2019 +0200
+
+    nack_packet
+
+ main.c   |   2 ++
+ packet.c |  33 +++++++++++++++++++++++++++++++++
+ packet.h |   2 ++
+ test     | Bin 17648 -> 17648 bytes
+ 4 files changed, 37 insertions(+)
+
+commit bcc638ca069ed408b2b458d8b21a7f99ef75ad29
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Sun Oct 6 22:46:02 2019 +0200
+
+    packet (format)
+
+ main.c   |  21 ++++++++++----------
+ packet.c |  67 ++++++++++++++++++++++++++++++++++++++++++++++++++-------------
+ packet.h |  19 +++++++++---------
+ test     | Bin 17568 -> 17648 bytes
+ 4 files changed, 74 insertions(+), 33 deletions(-)
+
+commit ab6f1c6eda279ef038efd2fa507541b1f939699a
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Sun Oct 6 21:07:26 2019 +0200
+
+    packet
+
+ main.c   |  15 +++++++++++++--
+ packet.c |  24 ++++++++++++++++++++++++
+ packet.h |   4 +++-
+ test     | Bin 17568 -> 17568 bytes
+ 4 files changed, 40 insertions(+), 3 deletions(-)
+
+commit 3fc39449ef5b30ce6e8e084dc54590019104686b
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Sat Oct 5 15:28:26 2019 +0200
+
+    network + packet
+
+ network.c |   1 +
+ network.h |   5 +++--
+ packet.c  |  32 ++++++++++++++++++++++++++++++++
+ packet.h  |   7 ++++++-
+ test      | Bin 17432 -> 17568 bytes
+ 5 files changed, 42 insertions(+), 3 deletions(-)
+
+commit f5e75dab6e176664b18af04d409570436fac0fbc
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Sat Oct 5 14:17:52 2019 +0200
+
+    Network
+
+ main.c    |  15 +++++++++++++--
+ network.c |  45 ++++++---------------------------------------
+ network.h |   3 +++
+ test      | Bin 17736 -> 17432 bytes
+ 4 files changed, 22 insertions(+), 41 deletions(-)
+
+commit 997922b47c5e1bf7f05c5f182f5a636b9cd7c770
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Sat Oct 5 13:47:33 2019 +0200
+
+    Network
+
+ main.c    |  77 +++++++++-----------------------------------------------------
+ network.c |  64 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ network.h |  10 ++++++++
+ packet.c  |   4 ++--
+ test      | Bin 17656 -> 17736 bytes
+ 5 files changed, 87 insertions(+), 68 deletions(-)
+
+commit 9bdad08eaa769af703b602fcbfa4552e564159fa
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Thu Oct 3 23:44:22 2019 +0200
+
+    Lecture de packet
+
+ main.c   |  17 +++++++++++++++--
+ packet.c |  33 +++++++++++++++++++++++----------
+ packet.h |  16 ++++++++++++++--
+ test     | Bin 17464 -> 17656 bytes
+ 4 files changed, 52 insertions(+), 14 deletions(-)
+
+commit 2061061d615a06b0c084f2eb7ec7a7fbce641e3e
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Thu Oct 3 17:29:15 2019 +0200
+
+    A
+
+ packet.c | 26 ++++++++++++++++++++++++++
+ packet.h | 25 +------------------------
+ 2 files changed, 27 insertions(+), 24 deletions(-)
+
+commit fdb5c4890b56a7681974ebc664b9d8539c9b35e3
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Thu Oct 3 17:17:38 2019 +0200
+
+    a
+
+ main.c   |  47 ++++++-----------------------------------------
+ main.cpp |  44 --------------------------------------------
+ packet.h |  32 ++++++++++++++++++++++++++++++++
+ test     | Bin 17376 -> 17464 bytes
+ 4 files changed, 38 insertions(+), 85 deletions(-)
+
+commit 0afa65dd4539b7ec5e945320b67bdb5e5ee9a266
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Wed Oct 2 23:28:58 2019 +0200
+
+    a
+
+ main.c |  58 ++++++++++++++++++++++++++++++++++++++++++++++------------
+ test   | Bin 0 -> 17376 bytes
+ 2 files changed, 46 insertions(+), 12 deletions(-)
+
+commit 28ea8bd338fc5771f6647dd8d17925f4062bf063
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Wed Oct 2 16:38:08 2019 +0200
+
+    a
+
+ main.c | 36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
+
+commit ae656d7846d4d6b1ab8efb6a6fcd2d3e2c0324b5
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Wed Oct 2 16:25:36 2019 +0200
+
+    a
+
+ main.c   | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+ main.cpp |  4 ++--
+ 2 files changed, 48 insertions(+), 2 deletions(-)
+
+commit 66cd12a385349d0071bb2d55542d90e4f4d122c3
+Author: AMasquelier <38529011+AMasquelier@users.noreply.github.com>
+Date:   Thu Sep 26 07:32:04 2019 +0200
+
+    Add files via upload
+
+ main.cpp | 44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)

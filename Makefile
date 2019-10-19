@@ -1,2 +1,2 @@
-all: network.h packet.h main.c network.c packet.c
-	gcc main.c network.c packet.c -o receiver
+all: src/network.h src/packet.h main.c src/network.c src/packet.c
+	gcc src/main.c src/network.c src/packet.c -o receiver

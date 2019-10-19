@@ -46,6 +46,7 @@ int create_client(Client *c, struct sockaddr_in6 *serv_addr)
     c->seqnum = 255;
     c->closed = 0;
     c->window = WINDOW_SIZE;
+    c->send_ack = 0;
     return 1;
 }
 
@@ -69,6 +70,7 @@ linked_buffer* process_packet(linked_buffer *buffer)
             buffer->client->closed = 1;
         }
         buffer->client->seqnum = (buffer->client->seqnum+1)%256;
+        buffer->client->send_ack = 1;
         buffer->client->timestamp = buffer->pkt->timestamp;
         destroy_packet(buffer->pkt);
         buffer->client->window++;

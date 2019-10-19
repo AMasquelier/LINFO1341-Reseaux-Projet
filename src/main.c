@@ -137,11 +137,10 @@ int main(int argc, char *argv[])
 			// Vide le buffer
 			buffer = process_packet(buffer);
 			//if (buffer != NULL) printf("Buffer size : %d\n", buffer->size);
-			send_ack(sock, &client_addr, client.seqnum, client.timestamp, client.window);
+			if (client.send_ack == 1) send_ack(sock, &client_addr, client.seqnum, client.timestamp, client.window);
 			if (client.closed == 1)
 			{
 				keep = 0;
-				send_ack(sock, &client_addr, client.seqnum, client.timestamp, client.window);
 			}
 		}
     }
