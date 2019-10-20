@@ -96,8 +96,7 @@ int main(int argc, char *argv[])
 
     int keep = 1;
 
-    Client client;
-	create_client(&client, NULL, create_name(file_pattern, n));
+    Client *clients = NULL;
 
 	struct timeval timeout;
 	timeout.tv_sec = 1;
@@ -110,52 +109,66 @@ int main(int argc, char *argv[])
 		FD_SET(sock, &rset);
 		int nready = select(sock+1, &rset, NULL, NULL, &timeout);
 
-
+		Client *rec = search(clients, &client_addr);
 		if (FD_ISSET(sock, &rset))
 		{
 			socklen_t clientsize = sizeof(client_addr);
 			n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
 
-
-			TRTP_packet *p = read_TRTP_packet(buf);
-			//print_packet(p);
-			uint32_t CRC2 = crc32(0, p->payload, p->length);
-
-			if (client.window == 0										||
-				!is_in_window((client.seqnum+1)%256, WINDOW_SIZE, p->seqnum) ||
-				p->type > 3 || p->type < 1 								||
-				(p->tr != 0 && p->type != 1) 							||
-				p->length > 512											||
-				(p->CRC1 != p->nCRC1) 									||
-				(p->type == 1 && p->length != 0 && CRC2 != p->CRC2))
+			if (rec == NULL)
 			{
-				// Ignore
-				destroy_packet(p);
+				char *filename = create_name(file_pattern, n);
+				clients = add_client(clients, &client_addr, filename);
+				free(filename);
+				rec = search(clients, &client_addr);
+				n++;
 			}
-	        else if (p->type == 1 && p->tr == 1)
-	        {
-	            send_nack(sock, &client_addr, p->seqnum, p->timestamp, client.window);
-				destroy_packet(p);
-		    }
-	        else
-	        {
-				buffer = add_packet(buffer, &client, p);
-				//if (buffer != NULL) printf("Buffer size : %d\n", buffer->size);
-	        }
+
+			if (rec != NULL)
+			{
+				TRTP_packet *p = read_TRTP_packet(buf);
+				//print_packet(p);
+				uint32_t CRC2 = crc32(0, p->payload, p->length);
+
+				if (rec->window == 0										||
+					!is_in_window((rec->seqnum+1)%256, WINDOW_SIZE, p->seqnum) ||
+					p->type > 3 || p->type < 1 								||
+					(p->tr != 0 && p->type != 1) 							||
+					p->length > 512											||
+					(p->CRC1 != p->nCRC1) 									||
+					(p->type == 1 && p->length != 0 && CRC2 != p->CRC2))
+				{
+					// Ignore
+					destroy_packet(p);
+				}
+		        else if (p->type == 1 && p->tr == 1)
+		        {
+		            send_nack(sock, &client_addr, p->seqnum, p->timestamp, rec->window);
+					destroy_packet(p);
+			    }
+		        else
+		        {
+					buffer = add_packet(buffer, rec, p);
+					//if (buffer != NULL) printf("Buffer size : %d\n", buffer->size);
+		        }
+			}
 			//printf("Window : %d\n", client.window);
 		}
-		else
+		if (rec != NULL)
 		{
-			// Vide le buffer
-			buffer = process_packet(buffer);
 			//if (buffer != NULL) printf("Buffer size : %d\n", buffer->size);
-			if (client.send_ack == 1) send_ack(sock, &client_addr, client.seqnum, client.timestamp, client.window);
-			if (client.closed == 1) nb_closed_files++;
-
+			if (rec->send_ack == 1) send_ack(sock, &client_addr, rec->seqnum, rec->timestamp, rec->window);
+			if (rec->closed == 1)
+			{
+				nb_closed_files++;
+				clients = remove_client(clients, rec);
+			}
+			if (nb_files != -1 && nb_closed_files >= nb_files) keep = 0;
 		}
-		if (client.send_ack == 1) send_ack(sock, &client_addr, client.seqnum, client.timestamp, client.window);
-		if (nb_files != -1 && nb_closed_files >= nb_files) keep = 0;
+		// Vide le buffer
+		buffer = process_packet(buffer);
     }
+	flush_clients(clients);
 	flush_buffer(buffer); //Vide le buffer au cas où il ne serait pas vide (Pas supposé arriver)
     free(buf);
 	close(sock);

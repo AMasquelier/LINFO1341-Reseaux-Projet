@@ -16,14 +16,16 @@
 
 typedef struct Client
 {
-    struct in6_addr addr;
-
     int file;
     uint8_t seqnum;
     uint8_t closed;
     uint8_t window;
     uint32_t timestamp;
     uint8_t send_ack;
+
+    struct Client *next;
+    struct in6_addr addr;
+    int size;
 } Client;
 
 typedef struct linked_buffer
@@ -36,11 +38,17 @@ typedef struct linked_buffer
 
 void flush_buffer(linked_buffer *buffer);
 
+void flush_clients(Client *clients);
+
 int is_in_window(uint8_t min, uint8_t window, uint8_t seqnum);
+
+Client *search(Client *first, struct sockaddr_in6 *addr);
 
 linked_buffer* add_packet(linked_buffer *first, Client *client, TRTP_packet *pkt);
 
-int create_client(Client *c, struct sockaddr_in6 *serv_addr, const char *filename);
+Client *add_client(Client *c, struct sockaddr_in6 *serv_addr, const char *filename);
+
+Client *remove_client(Client *first, Client *to_remove);
 
 linked_buffer* process_packet(linked_buffer *first);
 

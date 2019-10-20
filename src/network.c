@@ -1,8 +1,71 @@
 #include "network.h"
 
-int compare_ip(struct in6_addr addr1, struct in6_addr addr)
+int compare_ip(struct in6_addr *addr1, struct in6_addr *addr2)
 {
-    return 0;
+    int i = 0, r = 1;
+    for(i = 0; i < 16; i++) r = (addr1->s6_addr[i] == addr2->s6_addr[i]) && r;
+    return r;
+}
+
+void copy_ip(struct in6_addr *dest, struct in6_addr *src)
+{
+    int i = 0;
+    for(i = 0; i < 16; i++) dest[i] = src[i];
+}
+
+Client* add_client(Client *first, struct sockaddr_in6 *serv_addr, const char *filename)
+{
+    if (serv_addr == NULL) return first;
+    if (first == NULL)
+    {
+        Client *client = (Client *) malloc(sizeof(Client));
+        if (client != NULL)
+        {
+            client->file = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+            client->seqnum = 255;
+            client->closed = 0;
+            client->window = WINDOW_SIZE;
+            client->timestamp = 0;
+            client->send_ack = 0;
+
+            client->next = NULL;
+            client->addr = serv_addr->sin6_addr;
+            client->size = 1;
+        }
+        return client;
+    }
+    first->next = add_client(first->next, serv_addr, filename);
+    if(first->next != NULL) first->size = first->next->size + 1;
+
+    return first;
+}
+
+Client *remove_client(Client *first, Client *to_remove)
+{
+    if (first == NULL) return NULL;
+
+    if (first == to_remove)
+    {
+        Client *next = first->next;
+
+        if (first != NULL) free(first);
+
+        return next;
+    }
+
+    if (first->next != NULL)
+    {
+        first->next = remove_client(first->next, to_remove);
+        if (first->next != NULL) first->size = first->next->size + 1;
+    }
+    return first;
+}
+
+Client *search(Client *first, struct sockaddr_in6 *addr)
+{
+    if (first == NULL) return NULL;
+    if (compare_ip(&addr->sin6_addr, &first->addr) == 1) return first;
+    return search(first->next, addr);
 }
 
 void flush_buffer(linked_buffer *buffer)
@@ -13,6 +76,16 @@ void flush_buffer(linked_buffer *buffer)
         linked_buffer *next = buffer->next;
         if (buffer != NULL) free(buffer);
         flush_buffer(next);
+    }
+}
+
+void flush_clients(Client *clients)
+{
+    if (clients != NULL)
+    {
+        Client *next = clients->next;
+        if (clients != NULL) free(clients);
+        flush_clients(next);
     }
 }
 
@@ -38,16 +111,6 @@ linked_buffer* add_packet(linked_buffer *first, Client *client, TRTP_packet *pkt
     if(first->next != NULL) first->size = first->next->size + 1;
 
     return first;
-}
-
-int create_client(Client *c, struct sockaddr_in6 *serv_addr, const char *filename)
-{
-    c->file = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0644);
-    c->seqnum = 255;
-    c->closed = 0;
-    c->window = WINDOW_SIZE;
-    c->send_ack = 0;
-    return 1;
 }
 
 linked_buffer* process_packet(linked_buffer *buffer)
