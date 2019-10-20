@@ -40,7 +40,7 @@ int is_in_window(uint8_t min, uint8_t window, uint8_t seqnum);
 
 linked_buffer* add_packet(linked_buffer *first, Client *client, TRTP_packet *pkt);
 
-int create_client(Client *c, struct sockaddr_in6 *serv_addr);
+int create_client(Client *c, struct sockaddr_in6 *serv_addr, const char *filename);
 
 linked_buffer* process_packet(linked_buffer *first);
 

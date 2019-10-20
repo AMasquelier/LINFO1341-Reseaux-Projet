@@ -53,27 +53,28 @@ void destroy_packet(TRTP_packet *pkt)
 	if (pkt != NULL)
 	{
 		if (pkt->length > 0) free(pkt->payload);
-
 		free(pkt);
 	}
 }
 
 void display_byte(uint8_t byte)
 {
-    for (int j = 0; j < 8;  j++) printf("%d", ((byte >> (7-j)) & 1));
+	int j = 0;
+    for (j = 0; j < 8;  j++) printf("%d", ((byte >> (7-j)) & 1));
     printf(" ");
 }
 
 void display_byte_representation(void *data, long size)
 {
     uint8_t byte;
-    for (long i = 0; i < size; i++)
+	long i = 0;
+    for (i = 0; i < size; i++)
     {
         memcpy(&byte, data + i, 1);
         display_byte(byte);
     }
     printf("\n");
-    for (long i = 0; i < size; i++)
+    for (i = 0; i < size; i++)
     {
         memcpy(&byte, data + i, 1);
         printf("%02X ", byte);
@@ -167,7 +168,8 @@ TRTP_packet *read_TRTP_packet(void *packet)
     //display_byte_representation(&header, 4);
     header = htonl(header);
     uint8_t bits[32];
-	for (int i = 31; i >= 0; i--) bits[31-i] = ((header >> i) & 1);
+	int i = 31;
+	for (i = 31; i >= 0; i--) bits[31-i] = ((header >> i) & 1);
     //for (int i = 0; i < 32; i++) printf("%d", bits[i]); printf("\n");
 
     // Type
@@ -176,7 +178,7 @@ TRTP_packet *read_TRTP_packet(void *packet)
     // Truncated ?
 	pkt->tr = bits[2];
     // Window
-	for (int i = 0; i < 5; i++) pkt->window = 2 * pkt->window + bits[3 + i];
+	for (i = 0; i < 5; i++) pkt->window = 2 * pkt->window + bits[3 + i];
     // L
 
 	pkt->L = bits[8];
@@ -201,10 +203,6 @@ TRTP_packet *read_TRTP_packet(void *packet)
 
     memcpy(&pkt->seqnum, packet + 2 + pkt->L, 1);
     if (pkt->L) pkt->seqnum = pkt->seqnum;
-
-	if ((pkt->type != 1 && pkt->tr) || pkt->length > 512) printf("Ignored\n");
-
-	if (pkt->type == 1 && pkt->length == 0 /* && ... */) printf("Transfer ended\n");
 
     // Timestamp
     memcpy(&pkt->timestamp, packet + 3 + pkt->L, 4);

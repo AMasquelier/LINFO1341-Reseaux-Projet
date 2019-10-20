@@ -19,14 +19,15 @@ int main(int argc, char *argv[])
 {
 	char *file_pattern = "file_%02d.dat";
 	int nb_connections = 100;
+	int nb_files = -1;
 	char *ip = "::";
 	int port;
 
 
 	// Reading args
-	for (int i = 1; i < argc; i++)
+	int i = 1;
+	for (i = 1; i < argc; i++)
 	{
-		printf("%s\n", argv[i]);
 		if (strcmp("-o", argv[i]) == 0 && argc > i + 1)
 		{
 			file_pattern = argv[i+1];
@@ -39,6 +40,16 @@ int main(int argc, char *argv[])
 			{
 				printf("WARNING : bad number of connections -> set to default (100)\n");
 				nb_connections = 100;
+			}
+			i++;
+		}
+		else if (strcmp("-n", argv[i]) == 0 && argc > i + 1)
+		{
+			nb_files = atoi(argv[i+1]);
+			if (nb_files < -1)
+			{
+				printf("WARNING : bad number of connections -> set to default undefined number of files\n");
+				nb_connections = -1;
 			}
 			i++;
 		}
@@ -79,13 +90,14 @@ int main(int argc, char *argv[])
 	//printf("%s\n", create_name("Salut%02d.dat", n));
 
     int n = 0;
+	int nb_closed_files = 0;
 	linked_buffer *buffer = NULL;
 
 
     int keep = 1;
 
     Client client;
-	create_client(&client, NULL);
+	create_client(&client, NULL, create_name(file_pattern, n));
 
 	struct timeval timeout;
 	timeout.tv_sec = 1;
@@ -138,11 +150,11 @@ int main(int argc, char *argv[])
 			buffer = process_packet(buffer);
 			//if (buffer != NULL) printf("Buffer size : %d\n", buffer->size);
 			if (client.send_ack == 1) send_ack(sock, &client_addr, client.seqnum, client.timestamp, client.window);
-			if (client.closed == 1)
-			{
-				keep = 0;
-			}
+			if (client.closed == 1) nb_closed_files++;
+
 		}
+		if (client.send_ack == 1) send_ack(sock, &client_addr, client.seqnum, client.timestamp, client.window);
+		if (nb_files != -1 && nb_closed_files >= nb_files) keep = 0;
     }
 	flush_buffer(buffer); //Vide le buffer au cas où il ne serait pas vide (Pas supposé arriver)
     free(buf);

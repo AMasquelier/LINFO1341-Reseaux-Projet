@@ -40,9 +40,9 @@ linked_buffer* add_packet(linked_buffer *first, Client *client, TRTP_packet *pkt
     return first;
 }
 
-int create_client(Client *c, struct sockaddr_in6 *serv_addr)
+int create_client(Client *c, struct sockaddr_in6 *serv_addr, const char *filename)
 {
-    c->file = open("file.c", O_WRONLY | O_TRUNC | O_CREAT, 0644);
+    c->file = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0644);
     c->seqnum = 255;
     c->closed = 0;
     c->window = WINDOW_SIZE;
@@ -53,16 +53,12 @@ int create_client(Client *c, struct sockaddr_in6 *serv_addr)
 linked_buffer* process_packet(linked_buffer *buffer)
 {
     if (buffer == NULL) return NULL;
-    //printf("1-Looking for %d  \n", buffer->client->seqnum);
-    //printf("1-Looking %d  \n", buffer->pkt->seqnum);
 
     if ((buffer->client->seqnum+1)%256 == buffer->pkt->seqnum)
     {
-        //printf("2-Looking %d  \n", buffer->client->seqnum);
         if (buffer->pkt->length > 0)
         {
             int nw = write(buffer->client->file, buffer->pkt->payload, buffer->pkt->length);
-            //printf("written %d bytes \n", nw);
         }
         else
         {
@@ -92,7 +88,6 @@ linked_buffer* process_packet(linked_buffer *buffer)
 
 int is_in_window(uint8_t min, uint8_t window, uint8_t seqnum)
 {
-    //printf("Is in window : %d, %d, %d \n ", min, window, seqnum);
     return ((seqnum >= min && seqnum < min + window) ||
             (min + seqnum > 255 && seqnum >= min && seqnum < (min + window)%256));
 }
