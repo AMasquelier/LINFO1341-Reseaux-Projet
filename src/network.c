@@ -178,6 +178,7 @@ int send_nack(int socket, struct sockaddr_in6 *client, uint8_t seqnum, uint32_t 
 
 int create_socket(struct sockaddr_in6 *addr, int port)
 {
+    bzero(addr, sizeof(struct sockaddr_in6));
     if (addr == NULL || port <= 0)
     {
         fprintf(stderr, "Bad input\n");

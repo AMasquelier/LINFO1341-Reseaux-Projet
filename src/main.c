@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 			socklen_t clientsize = sizeof(client_addr);
 			n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
 
-			if (rec == NULL)
+			if (rec == NULL && clients != NULL && clients->size < nb_conections)
 			{
 				char *filename = create_name(file_pattern, n);
 				clients = add_client(clients, &client_addr, filename);
@@ -167,7 +167,9 @@ int main(int argc, char *argv[])
 		}
 		// Vide le buffer
 		buffer = process_packet(buffer);
+		//if (clients != NULL) printf("Nb clients : %d \n", clients->size);
     }
+
 	flush_clients(clients);
 	flush_buffer(buffer); //Vide le buffer au cas où il ne serait pas vide (Pas supposé arriver)
     free(buf);
