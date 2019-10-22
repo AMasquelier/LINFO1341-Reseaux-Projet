@@ -36,7 +36,6 @@ typedef struct linked_buffer
     int size;
 } linked_buffer;
 
-int compare_ip(struct in6_addr *addr1, struct in6_addr *addr2);
 
 int real_address(const char *address, struct sockaddr_in6 *rval);
 

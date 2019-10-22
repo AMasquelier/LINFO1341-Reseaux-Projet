@@ -77,9 +77,8 @@ int main(int argc, char *argv[])
 
 
 	fd_set rset;
-    struct sockaddr_in6 serv_addr, client_addr, accepted_addr;
+    struct sockaddr_in6 serv_addr, client_addr;
     bzero(&client_addr, sizeof(client_addr));
-	bzero(&accepted_addr, sizeof(accepted_addr));
 
     int sock = create_socket(&serv_addr, port);
 
@@ -113,7 +112,6 @@ int main(int argc, char *argv[])
 		Client *rec = search(clients, &client_addr);
 		if (FD_ISSET(sock, &rset))
 		{
-
 			socklen_t clientsize = sizeof(client_addr);
 			n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
 
@@ -154,7 +152,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		if (rec != NULL)
-
+		{
 			if (rec->send_ack == 1) send_ack(sock, &client_addr, rec->seqnum, rec->timestamp, rec->window);
 			if (rec->closed == 1)
 			{
