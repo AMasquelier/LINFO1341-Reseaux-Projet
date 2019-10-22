@@ -14,6 +14,40 @@ void copy_ip(struct in6_addr *dest, struct in6_addr *src)
     for(i = 0; i < 16; i++) dest[i] = src[i];
 }
 
+int real_address(const char *address, struct sockaddr_in6 *rval)
+{
+    //TODO
+    struct addrinfo hints, *res;
+    int err;
+    char addrstr[100];
+    void *ptr;
+
+    memset (&hints, 0, sizeof (hints));
+    hints.ai_family = AF_INET6;
+    hints.ai_socktype = SOCK_DGRAM;
+
+    err = getaddrinfo (address, NULL, &hints, &res);
+    if (err != 0)
+    {
+      perror ("getaddrinfo");
+      return -1;
+    }
+
+    while (res)
+    {
+        switch (res->ai_family)
+        {
+            case AF_INET6:
+                copy_ip(&rval->sin6_addr, &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr);
+                break;
+        }
+        res = res->ai_next;
+    }
+
+    return 0;
+}
+
+
 Client* add_client(Client *first, struct sockaddr_in6 *serv_addr, const char *filename)
 {
     if (serv_addr == NULL) return first;

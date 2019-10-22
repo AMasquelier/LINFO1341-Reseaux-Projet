@@ -7,5 +7,5 @@ build_tests:
 	gcc tests/test2.c -o tests/tests2 -lpthread
 
 tests:
-	-./tests/tests2
 	-./tests/tests
+	-./tests/tests2

@@ -77,8 +77,9 @@ int main(int argc, char *argv[])
 
 
 	fd_set rset;
-    struct sockaddr_in6 serv_addr, client_addr;
+    struct sockaddr_in6 serv_addr, client_addr, accepted_addr;
     bzero(&client_addr, sizeof(client_addr));
+	bzero(&accepted_addr, sizeof(accepted_addr));
 
     int sock = create_socket(&serv_addr, port);
 
@@ -87,10 +88,6 @@ int main(int argc, char *argv[])
 
     void *buf = malloc(528);
 
-    //client clients[4];
-	//printf("%s\n", create_name("Salut%02d.dat", n));
-
-	//real_address(ip, NULL);
 
     int n = 0;
 	int nb_closed_files = 0;
@@ -116,9 +113,10 @@ int main(int argc, char *argv[])
 		Client *rec = search(clients, &client_addr);
 		if (FD_ISSET(sock, &rset))
 		{
+
 			socklen_t clientsize = sizeof(client_addr);
 			n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
-			
+
 			if (rec == NULL && ((clients != NULL && clients->size < nb_connections) || clients == NULL))
 			{
 				char *filename = create_name(file_pattern, n);
@@ -131,7 +129,6 @@ int main(int argc, char *argv[])
 			if (rec != NULL)
 			{
 				TRTP_packet *p = read_TRTP_packet(buf);
-				//print_packet(p);
 				uint32_t CRC2 = crc32(0, p->payload, p->length);
 
 				if (rec->window == 0										||
@@ -153,14 +150,11 @@ int main(int argc, char *argv[])
 		        else
 		        {
 					buffer = add_packet(buffer, rec, p);
-					//if (buffer != NULL) printf("Buffer size : %d\n", buffer->size);
 		        }
 			}
-			//printf("Window : %d\n", client.window);
 		}
 		if (rec != NULL)
-		{
-			//if (buffer != NULL) printf("Buffer size : %d\n", buffer->size);
+
 			if (rec->send_ack == 1) send_ack(sock, &client_addr, rec->seqnum, rec->timestamp, rec->window);
 			if (rec->closed == 1)
 			{
@@ -171,7 +165,6 @@ int main(int argc, char *argv[])
 		}
 		// Vide le buffer
 		buffer = process_packet(buffer);
-		//if (clients != NULL) printf("Nb clients : %d \n", clients->size);
     }
 
 	flush_clients(clients);
