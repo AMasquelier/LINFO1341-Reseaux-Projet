@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 		{
 			socklen_t clientsize = sizeof(client_addr);
 			n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
-			printf("n : %d \n", n_rec);
+			
 			if (rec == NULL && ((clients != NULL && clients->size < nb_connections) || clients == NULL))
 			{
 				char *filename = create_name(file_pattern, n);
