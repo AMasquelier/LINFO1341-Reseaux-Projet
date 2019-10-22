@@ -6,7 +6,7 @@
 
 void *receiver(void *arg)
 {
-    system("./receiver -o tests/file_to_check -n 1 :: 1341");
+    system("./receiver -o tests/file_to_check -n 1 :: 1300");
 
     pthread_exit(NULL);
 }
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 
     sleep(2);
 
-    system("./sender -f tests/file_to_send ::1 1342");
+    system("./sender -f tests/file_to_send ::1 1300");
 
     sleep(1);
 

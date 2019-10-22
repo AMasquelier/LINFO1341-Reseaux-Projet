@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
 
     int sock = create_socket(&serv_addr, port);
 
+
 	FD_ZERO(&rset);
 
     void *buf = malloc(528);
@@ -89,12 +90,15 @@ int main(int argc, char *argv[])
     //client clients[4];
 	//printf("%s\n", create_name("Salut%02d.dat", n));
 
+	//real_address(ip, NULL);
+
     int n = 0;
 	int nb_closed_files = 0;
 	linked_buffer *buffer = NULL;
 
 
     int keep = 1;
+	if (sock == -1) keep = 0;
 
     Client *clients = NULL;
 
@@ -114,8 +118,8 @@ int main(int argc, char *argv[])
 		{
 			socklen_t clientsize = sizeof(client_addr);
 			n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
-
-			if (rec == NULL && clients != NULL && clients->size < nb_conections)
+			printf("n : %d \n", n_rec);
+			if (rec == NULL && ((clients != NULL && clients->size < nb_connections) || clients == NULL))
 			{
 				char *filename = create_name(file_pattern, n);
 				clients = add_client(clients, &client_addr, filename);

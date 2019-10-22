@@ -6,6 +6,6 @@ build_tests:
 	gcc tests/test.c -o tests/tests -lpthread &
 	gcc tests/test2.c -o tests/tests2 -lpthread
 
-tests: tests/test.c
-	-./tests/tests
+tests:
 	-./tests/tests2
+	-./tests/tests

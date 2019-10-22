@@ -1,5 +1,44 @@
 #include "network.h"
 
+const char * real_address(const char *address, struct sockaddr_in6 *rval)
+{
+    struct addrinfo hints, *res;
+    int errcode;
+    char addrstr[100];
+    void *ptr;
+
+    memset (&hints, 0, sizeof (hints));
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags |= AI_CANONNAME;
+
+    errcode = getaddrinfo (address, NULL, &hints, &res);
+    if (errcode != 0)
+    {
+      perror ("getaddrinfo");
+      return NULL;
+    }
+
+    printf ("Host: %s\n", address);
+    while (res)
+    {
+        inet_ntop (res->ai_family, res->ai_addr->sa_data, addrstr, 100);
+
+        switch (res->ai_family)
+        {
+            case AF_INET6:
+            ptr = &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr;
+            break;
+        }
+        inet_ntop (res->ai_family, ptr, addrstr, 100);
+        printf ("IPv%d address: %s (%s)\n", res->ai_family == PF_INET6 ? 6 : 4,
+        addrstr, res->ai_canonname);
+        res = res->ai_next;
+    }
+
+    return NULL;
+}
+
 int compare_ip(struct in6_addr *addr1, struct in6_addr *addr2)
 {
     int i = 0, r = 1;
@@ -21,6 +60,7 @@ Client* add_client(Client *first, struct sockaddr_in6 *serv_addr, const char *fi
         Client *client = (Client *) malloc(sizeof(Client));
         if (client != NULL)
         {
+            printf("Creating client \n");
             client->file = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0644);
             client->seqnum = 255;
             client->closed = 0;

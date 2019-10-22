@@ -36,6 +36,8 @@ typedef struct linked_buffer
     int size;
 } linked_buffer;
 
+const char * real_address(const char *address, struct sockaddr_in6 *rval);
+
 void flush_buffer(linked_buffer *buffer);
 
 void flush_clients(Client *clients);
