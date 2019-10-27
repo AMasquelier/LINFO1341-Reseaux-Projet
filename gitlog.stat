@@ -1,3 +1,19 @@
+commit 867b5117d6d3a745e528fe44d12c9c4a143d7743
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Tue Oct 22 17:27:57 2019 +0200
+
+    Modifications
+
+ file_00.dat                             | Bin 25495 -> 0 bytes
+ gitlog.stat                             |  16 ++++++++++++++++
+ "projet1_Masquelier_Bruy\303\250re.zip" | Bin 25495 -> 25692 bytes
+ receiver                                | Bin 22904 -> 22904 bytes
+ src/main.c                              |   6 ++----
+ src/network.h                           |   1 -
+ tests/tests                             | Bin
+ tests/tests2                            | Bin
+ 8 files changed, 18 insertions(+), 5 deletions(-)
+
 commit a7371193a56261036e2a1752e1c3ace77d2cf438
 Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
 Date:   Tue Oct 22 17:08:07 2019 +0200

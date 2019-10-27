@@ -1,26 +1,36 @@
 #include "network.h"
 
+void display_ip(struct in6_addr *addr)
+{
+    int i = 0, r = 1;
+    for(i = 0; i < 16; i++) printf("%d ", addr->s6_addr[i]);
+    printf("\n");
+}
 
 int compare_ip(struct in6_addr *addr1, struct in6_addr *addr2)
 {
-    int i = 0, r = 1;
-    for(i = 0; i < 16; i++) r = (addr1->s6_addr[i] == addr2->s6_addr[i]) && r;
-    return r;
+    if (addr1 != NULL && addr2 != NULL)
+    {
+        int i = 0, r = 1;
+        for(i = 0; i < 16; i++) r = (addr1->s6_addr[i] == addr2->s6_addr[i]) && r;
+        return r;
+    }
+    return 0;
 }
 
 void copy_ip(struct in6_addr *dest, struct in6_addr *src)
 {
-    int i = 0;
-    for(i = 0; i < 16; i++) dest[i] = src[i];
+    if (dest != NULL && src != NULL)
+    {
+        memcpy(dest, src, sizeof(struct in6_addr));
+    }
 }
 
 int real_address(const char *address, struct sockaddr_in6 *rval)
 {
-    //TODO
     struct addrinfo hints, *res;
     int err;
     char addrstr[100];
-    void *ptr;
 
     memset (&hints, 0, sizeof (hints));
     hints.ai_family = AF_INET6;
@@ -33,16 +43,10 @@ int real_address(const char *address, struct sockaddr_in6 *rval)
       return -1;
     }
 
-    while (res)
-    {
-        switch (res->ai_family)
-        {
-            case AF_INET6:
-                copy_ip(&rval->sin6_addr, &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr);
-                break;
-        }
-        res = res->ai_next;
-    }
+    struct in6_addr *addr = &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr;
+    copy_ip(&rval->sin6_addr, addr);
+
+    freeaddrinfo(res);
 
     return 0;
 }

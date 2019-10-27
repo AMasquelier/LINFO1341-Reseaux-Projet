@@ -22,6 +22,8 @@ int main(int argc, char *argv[])
 	int nb_files = -1;
 	char *ip = "::";
 	int port;
+	int all_addr = 1;
+	struct sockaddr_in6 accepted_ip;
 
 
 	// Reading args
@@ -56,6 +58,13 @@ int main(int argc, char *argv[])
 		else
 		{
 			ip = argv[i];
+			if (strcmp(ip, "::") == 0) all_addr = 1;
+			else
+			{
+				all_addr = 0;
+				bzero(&accepted_ip, sizeof(accepted_ip));
+				real_address(ip, &accepted_ip);
+			}
 			if (argc > i + 1)
 			{
 				port = atoi(argv[i+1]);
@@ -109,46 +118,49 @@ int main(int argc, char *argv[])
 		FD_SET(sock, &rset);
 		int nready = select(sock+1, &rset, NULL, NULL, &timeout);
 
+
 		Client *rec = search(clients, &client_addr);
 		if (FD_ISSET(sock, &rset))
 		{
 			socklen_t clientsize = sizeof(client_addr);
 			n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
-
-			if (rec == NULL && ((clients != NULL && clients->size < nb_connections) || clients == NULL))
+			if (all_addr || (!all_addr && compare_ip(&accepted_ip.sin6_addr, &client_addr.sin6_addr)))
 			{
-				char *filename = create_name(file_pattern, n);
-				clients = add_client(clients, &client_addr, filename);
-				free(filename);
-				rec = search(clients, &client_addr);
-				n++;
-			}
-
-			if (rec != NULL)
-			{
-				TRTP_packet *p = read_TRTP_packet(buf);
-				uint32_t CRC2 = crc32(0, p->payload, p->length);
-
-				if (rec->window == 0										||
-					!is_in_window((rec->seqnum+1)%256, WINDOW_SIZE, p->seqnum) ||
-					p->type > 3 || p->type < 1 								||
-					(p->tr != 0 && p->type != 1) 							||
-					p->length > 512											||
-					(p->CRC1 != p->nCRC1) 									||
-					(p->type == 1 && p->length != 0 && CRC2 != p->CRC2))
+				if (rec == NULL && ((clients != NULL && clients->size < nb_connections) || clients == NULL))
 				{
-					// Ignore
-					destroy_packet(p);
+					char *filename = create_name(file_pattern, n);
+					clients = add_client(clients, &client_addr, filename);
+					free(filename);
+					rec = search(clients, &client_addr);
+					n++;
 				}
-		        else if (p->type == 1 && p->tr == 1)
-		        {
-		            send_nack(sock, &client_addr, p->seqnum, p->timestamp, rec->window);
-					destroy_packet(p);
-			    }
-		        else
-		        {
-					buffer = add_packet(buffer, rec, p);
-		        }
+
+				if (rec != NULL)
+				{
+					TRTP_packet *p = read_TRTP_packet(buf);
+					uint32_t CRC2 = crc32(0, p->payload, p->length);
+
+					if (rec->window == 0										||
+						!is_in_window((rec->seqnum+1)%256, WINDOW_SIZE, p->seqnum) ||
+						p->type > 3 || p->type < 1 								||
+						(p->tr != 0 && p->type != 1) 							||
+						p->length > 512											||
+						(p->CRC1 != p->nCRC1) 									||
+						(p->type == 1 && p->length != 0 && CRC2 != p->CRC2))
+					{
+						// Ignore
+						destroy_packet(p);
+					}
+			        else if (p->type == 1 && p->tr == 1)
+			        {
+			            send_nack(sock, &client_addr, p->seqnum, p->timestamp, rec->window);
+						destroy_packet(p);
+				    }
+			        else
+			        {
+						buffer = add_packet(buffer, rec, p);
+			        }
+				}
 			}
 		}
 		if (rec != NULL)
@@ -164,7 +176,6 @@ int main(int argc, char *argv[])
 		// Vide le buffer
 		buffer = process_packet(buffer);
     }
-
 	flush_clients(clients);
 	flush_buffer(buffer); //Vide le buffer au cas où il ne serait pas vide (Pas supposé arriver)
     free(buf);
