@@ -111,8 +111,11 @@ int main(int argc, char *argv[])
 	timeout.tv_sec = 1;
 	timeout.tv_usec = 150000;
 
+	int sleep = 1;
+
     while (keep)
     {
+		sleep = 1;
         int n_rec = 0;
 
 		FD_SET(sock, &rset);
@@ -162,10 +165,15 @@ int main(int argc, char *argv[])
 			        }
 				}
 			}
+			sleep = 0;
 		}
 		if (rec != NULL)
 		{
-			if (rec->send_ack == 1) send_ack(sock, &client_addr, rec->seqnum, rec->timestamp, rec->window);
+			if (rec->send_ack == 1)
+			{
+				send_ack(sock, &client_addr, rec->seqnum, rec->timestamp, rec->window);
+				rec->send_ack = 0;
+			}
 			if (rec->closed == 1)
 			{
 				nb_closed_files++;
@@ -173,8 +181,14 @@ int main(int argc, char *argv[])
 			}
 			if (nb_files != -1 && nb_closed_files >= nb_files) keep = 0;
 		}
-		// Vide le buffer
-		buffer = process_packet(buffer);
+
+		if (buffer != NULL)
+		{
+			buffer = process_packet(buffer);
+			sleep = 0;
+		}
+
+		if (sleep == 1) usleep(10000); // Si rien ne se passe sleep pendant 10ms
     }
 	flush_clients(clients);
 	flush_buffer(buffer); //Vide le buffer au cas où il ne serait pas vide (Pas supposé arriver)
