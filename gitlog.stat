@@ -1,3 +1,28 @@
+commit 5182a376bd4807d24a71bf837e2e383029dfdf90
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Mon Oct 28 16:33:20 2019 +0100
+
+    Amélioration ack + utlisation CPU
+
+ receiver   | Bin 27088 -> 27136 bytes
+ src/main.c |  20 +++++++++++++++++---
+ 2 files changed, 17 insertions(+), 3 deletions(-)
+
+commit 91022ed19a03e9bc02230abe614636ee304a660a
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Sun Oct 27 12:53:15 2019 +0100
+
+    Check autorised IP
+
+ file_00.dat                             | Bin 0 -> 25776 bytes
+ gitlog.stat                             |  16 +++++++
+ "projet1_Masquelier_Bruy\303\250re.zip" | Bin 25692 -> 25776 bytes
+ receiver                                | Bin 22904 -> 27088 bytes
+ src/main.c                              |  75 ++++++++++++++++++--------------
+ src/network.c                           |  38 ++++++++--------
+ src/network.h                           |   3 ++
+ 7 files changed, 83 insertions(+), 49 deletions(-)
+
 commit 867b5117d6d3a745e528fe44d12c9c4a143d7743
 Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
 Date:   Tue Oct 22 17:27:57 2019 +0200
