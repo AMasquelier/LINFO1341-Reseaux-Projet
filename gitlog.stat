@@ -1,3 +1,23 @@
+commit 2b6d0e296758a65ed12ea1f4f3039c5575491165
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Tue Oct 29 16:16:38 2019 +0100
+
+    Correction erreur potentielle avec plusieurs clients
+
+ src/main.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+commit 3dac7546fbafaec33c60bb37d6c54d8f60b5b252
+Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
+Date:   Mon Oct 28 16:36:12 2019 +0100
+
+    Archive + log
+
+ file_00.dat                             | Bin 25776 -> 0 bytes
+ gitlog.stat                             |  25 +++++++++++++++++++++++++
+ "projet1_Masquelier_Bruy\303\250re.zip" | Bin 25776 -> 26179 bytes
+ 3 files changed, 25 insertions(+)
+
 commit 5182a376bd4807d24a71bf837e2e383029dfdf90
 Author: AMasquelier <antoine.masquelier@student.uclouvain.be>
 Date:   Mon Oct 28 16:33:20 2019 +0100
