@@ -127,6 +127,7 @@ int main(int argc, char *argv[])
 		{
 			socklen_t clientsize = sizeof(client_addr);
 			n_rec = recvfrom(sock, buf, 528, 0, (struct sockaddr *) &client_addr, &clientsize);
+			rec = search(clients, &client_addr);
 			if (all_addr || (!all_addr && compare_ip(&accepted_ip.sin6_addr, &client_addr.sin6_addr)))
 			{
 				if (rec == NULL && ((clients != NULL && clients->size < nb_connections) || clients == NULL))
